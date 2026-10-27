@@ -44,7 +44,7 @@ def main() -> None:
         print(f"Report: {report}")
         for n, m in ev["methods"].items():
             b = m["binary_correct_vs_incorrect"]
-            print(f"  {n:15s} 3-class acc={m['accuracy']:.3f} macro_f1={m['macro_f1']:.3f} | "
+            print(f"  {n:18s} 3-class acc={m['accuracy']:.3f} macro_f1={m['macro_f1']:.3f} | "
                   f"binary balanced_acc={b['balanced_accuracy']:.3f} incorrect_f1={b['incorrect_f1']:.3f}")
     elif a.cmd == "generate":
         rows = generate_dataset(a.participants, seed=a.seed)

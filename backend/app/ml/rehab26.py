@@ -13,6 +13,7 @@ import numpy as np
 from app.angle_calculation.angles import AngleSmoother, Landmark, joint_angle
 from app.exercises.library import get_exercise
 from app.feature_extraction.features import rep_features
+from app.feature_extraction.posture import posture_features
 from app.ml.dataset import Row
 from app.repetition_detection.counter import Repetition
 
@@ -66,6 +67,10 @@ def import_rehab26(root: Path, min_conf: float = 0.5) -> tuple[list[Row], dict]:
             stats["skipped_missing_file"] += len(reps)
             continue
         arr = np.load(path, allow_pickle=False)  # never unpickle downloaded data
+        path3d = path.with_name(path.name.replace("_2d.npy", "_3d.npy"))
+        arr3d = np.load(path3d, allow_pickle=False) if path3d.exists() else None
+        if arr3d is None:
+            stats["missing_3d_file"] += len(reps)
         for r in reps:
             ex_id, side, _ = EXERCISES[r["exercise_id"]]
             ex = get_exercise(ex_id)
@@ -91,8 +96,10 @@ def import_rehab26(root: Path, min_conf: float = 0.5) -> tuple[list[Row], dict]:
             rep = Repetition(index=int(r["repetition_number"]), t_start=times[0], t_end=times[-1], peak_progress=peak,
                              times=times, angles=angles, n_frames=n_frames, n_missing=missing, reached_target=False)
             label = map_label(r["correctness_score"], r["error_description"])
+            seg3d = arr3d[first:last + 1] if arr3d is not None and len(arr3d) == len(arr) else None
+            post = posture_features(arr[first:last + 1], seg3d, ex, side)
             rows.append({"participant_id": r["person"], "recording_id": f"{r['video_id']}-r{r['repetition_number']}",
-                         "exercise_id": ex_id, "label": label, "source": SOURCE, **rep_features(rep),
+                         "exercise_id": ex_id, "label": label, "source": SOURCE, **rep_features(rep), **post,
                          "camera": r["_cam"], "orientation_deg": r["person_orientation"],
                          "error_code": r["error_description"]})
             stats["imported"] += 1

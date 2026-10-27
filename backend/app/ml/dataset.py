@@ -9,6 +9,7 @@ import random
 from pathlib import Path
 
 from app.exercises.library import load_exercises
+from app.ml.features import POSTURE_FEATURES
 
 LABELS = ["acceptable", "insufficient_range", "incomplete_repetition", "too_fast", "uncontrolled", "insufficient_data",
           "posture_deviation"]  # posture_deviation: errors a single joint angle cannot express (real-data labels only)
@@ -38,7 +39,7 @@ def validate_rows(rows: list[Row]) -> None:
             problems.append(f"row {i}: unknown label {r['label']!r}")
         if r["exercise_id"] not in exercises:
             problems.append(f"row {i}: unknown exercise {r['exercise_id']!r}")
-        for c in RAW_FEATURES:
+        for c in RAW_FEATURES + [p for p in POSTURE_FEATURES if p in r]:  # posture columns are optional
             try:
                 if not math.isfinite(float(r[c])):
                     raise ValueError
@@ -61,7 +62,7 @@ def read_csv(path: Path) -> list[Row]:
     with path.open(newline="", encoding="utf-8") as f:
         rows: list[Row] = []
         for r in csv.DictReader(f):
-            rows.append({k: (float(v) if k in RAW_FEATURES else v) for k, v in r.items()})
+            rows.append({k: (float(v) if k in RAW_FEATURES or k in POSTURE_FEATURES else v) for k, v in r.items()})
     validate_rows(rows)
     return rows
 

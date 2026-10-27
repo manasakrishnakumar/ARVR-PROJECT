@@ -53,7 +53,8 @@ def test_label_mapping_and_camera_choice():
 
 def test_import_counts_labels_and_skips(root):
     rows, stats = import_rehab26(root)
-    assert stats == {"skipped_exercise_not_supported": 1, "skipped_missing_file": 1, "imported": 9}
+    assert stats == {"skipped_exercise_not_supported": 1, "skipped_missing_file": 1, "imported": 9,
+                     "missing_3d_file": 9}  # fixture has no 3D skeletons: 3D features fall back to zeros
     ds.validate_rows(rows)
     by = {(r["participant_id"], r["recording_id"].split("-r")[1]): r for r in rows}
     assert by[("A", "1")]["label"] == "acceptable" and by[("A", "2")]["label"] == "insufficient_range"
@@ -79,8 +80,11 @@ def test_csv_roundtrip_keeps_extra_columns_and_lopo_runs(root, tmp_path):
     assert len(back) == 9 and back[0]["camera"] == "1"
     ev = run_lopo(back, n_boot=5)
     assert ev["participants"] == ["A", "B", "C"] and ev["n"] == 9
-    assert set(ev["methods"]) == {"majority_class", "rule_based", "random_forest"}
-    assert "binary_correct_vs_incorrect" in ev["methods"]["random_forest"]
+    assert set(ev["methods"]) == {"majority_class", "rule_based", "rule_range_tuned", "rf_base", "rf_base_tuned",
+                                  "rf_posture", "rf_posture_tuned"}
+    assert "binary_correct_vs_incorrect" in ev["methods"]["rf_posture_tuned"]
+    # tuning is chosen per fold from training participants; each fold records its held-out person
+    assert {t["held_out"] for t in ev["tuning"]["rf_base_tuned"]} == {"A", "B", "C"}
 
 
 def test_lopo_needs_three_participants(root):
