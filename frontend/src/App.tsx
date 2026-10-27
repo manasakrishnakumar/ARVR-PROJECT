@@ -1,12 +1,16 @@
-﻿import { useEffect, useState } from "react";
-import { api } from "./services/api";
-import type { Exercise, Health } from "./types/api";
+﻿import { useCallback, useEffect, useState } from "react";
+import AccountPanel from "./components/AccountPanel";
+import ProgressPanel from "./components/ProgressPanel";
 import PoseLab from "./pages/PoseLab";
+import { api, ApiError, tokenStore } from "./services/api";
+import type { Exercise, Health, User } from "./types/api";
 
 export default function App() {
   const [health, setHealth] = useState<Health | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [progressKey, setProgressKey] = useState(0);
 
   useEffect(() => {
     Promise.all([api.health(), api.exercises()])
@@ -16,6 +20,14 @@ export default function App() {
       })
       .catch((e: Error) => setError(e.message));
   }, []);
+
+  // restore a previous sign-in; an expired or invalid token silently falls back to guest mode
+  useEffect(() => {
+    if (!tokenStore.get()) return;
+    api.me().then(setUser).catch((e) => { if (e instanceof ApiError && e.status === 401) tokenStore.set(null); });
+  }, []);
+
+  const onSessionSaved = useCallback(() => setProgressKey((k) => k + 1), []);
 
   return (
     <main className="page">
@@ -27,6 +39,8 @@ export default function App() {
       <div className="notice" role="note">
         {health?.disclaimer ?? "Research prototype. Not a medical device and not clinically validated."}
       </div>
+
+      <AccountPanel user={user} onUser={setUser} />
 
       <section className="card">
         <h2>Backend status</h2>
@@ -46,8 +60,9 @@ export default function App() {
           ))}
         </ul>
       </section>
-      <PoseLab exercises={exercises} />
+
+      <PoseLab exercises={exercises} user={user} onSessionSaved={onSessionSaved} />
+      {user && <ProgressPanel refreshKey={progressKey} />}
     </main>
   );
 }
-

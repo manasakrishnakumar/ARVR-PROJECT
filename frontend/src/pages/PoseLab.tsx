@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import RecommendationCard from "../components/RecommendationCard";
 import { bodyAngles, isotropic, jointAngle, MIN_CONFIDENCE, type JointAngles } from "../pose/angles";
 import { DemoEstimator } from "../pose/demo";
 import { MediaPipeEstimator } from "../pose/mediapipe";
 import { LANDMARK_INDEX, SKELETON, type PoseEstimator, type PoseFrame } from "../pose/types";
+import { api } from "../services/api";
 import { AnalysisSocket, type RepMsg, type SocketStatus, type StateMsg } from "../services/analysisSocket";
-import type { Exercise } from "../types/api";
+import type { AdaptationState, CompleteOut, Exercise, SessionCreated, User } from "../types/api";
 
 type Mode = "idle" | "camera" | "demo";
 const SEND_INTERVAL_MS = 66; // ~15 Hz is plenty for rep counting
@@ -38,13 +40,21 @@ const LABELS: Record<string, string> = {
   too_fast: "Too fast", uncontrolled: "Uncontrolled", insufficient_data: "Not enough data",
 };
 
-export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
+interface Props {
+  exercises: Exercise[];
+  user: User | null;
+  onSessionSaved: () => void;
+}
+
+export default function PoseLab({ exercises, user, onSessionSaved }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const estRef = useRef<PoseEstimator | null>(null);
   const rafRef = useRef(0);
   const streamRef = useRef<MediaStream | null>(null);
   const sockRef = useRef<AnalysisSocket | null>(null);
+  const sessionRef = useRef<SessionCreated | null>(null);
+  const repCountRef = useRef(0);
   const pausedRef = useRef(false);
   const exRef = useRef<Exercise | null>(null);
   const t0Ref = useRef(0);
@@ -63,6 +73,7 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
 
   const [exerciseId, setExerciseId] = useState("elbow_flexion");
   const [difficulty, setDifficulty] = useState(1);
+  const [adaptive, setAdaptive] = useState<AdaptationState | null>(null);
   const [live, setLive] = useState<StateMsg | null>(null);
   const [targetReps, setTargetReps] = useState(0);
   const [reps, setReps] = useState<RepMsg[]>([]);
@@ -70,9 +81,36 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
   const [sockStatus, setSockStatus] = useState<SocketStatus | "none">("none");
   const [poseWarn, setPoseWarn] = useState(false);
   const [audio, setAudio] = useState(false);
+  const [result, setResult] = useState<CompleteOut | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const exercise = exercises.find((e) => e.id === exerciseId) ?? null;
   const levels = exercise ? Object.keys(exercise.difficulty_levels) : ["1"];
+  const running = mode !== "idle";
+
+  // signed-in users start at the level the adaptive controller suggested after their last session
+  useEffect(() => {
+    if (running) return;
+    if (!user) { setAdaptive(null); setDifficulty(1); return; }
+    api.adaptationState(exerciseId)
+      .then((s) => { setAdaptive(s); setDifficulty(s.recommended_level); })
+      .catch(() => setAdaptive(null));
+  }, [user, exerciseId, running, result]);
+
+  const finishSession = useCallback(async () => {
+    const s = sessionRef.current;
+    sessionRef.current = null;
+    if (!s || repCountRef.current === 0) return; // nothing was exercised: leave no record
+    setSaving(true);
+    try {
+      setResult(await api.completeSession(s.id));
+      onSessionSaved();
+    } catch (e) {
+      setError(`Could not save the session summary: ${(e as Error).message}`);
+    } finally {
+      setSaving(false);
+    }
+  }, [onSessionSaved]);
 
   const stop = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
@@ -92,6 +130,11 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
     setSockStatus("none"); setPoseWarn(false); setLive(null);
   }, []);
 
+  const stopAndSave = useCallback(async () => {
+    stop();
+    await finishSession();
+  }, [stop, finishSession]);
+
   useEffect(() => stop, [stop]);
 
   const speak = (text: string) => {
@@ -101,20 +144,25 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
     }
   };
 
-  const openSession = () => {
+  const openSession = async (isDemo: boolean) => {
     exRef.current = exercise;
     t0Ref.current = performance.now();
     lastSendRef.current = 0;
-    setReps([]); setFeedback(""); setLive(null);
+    repCountRef.current = 0;
+    setReps([]); setFeedback(""); setLive(null); setResult(null);
+    // the session record lets the server save repetitions and later judge the session; the pose stream still works without it
+    sessionRef.current = await api.createSession(exerciseId, difficulty, isDemo).catch(() => null);
+    const s = sessionRef.current;
     sockRef.current = new AnalysisSocket(exerciseId, difficulty, (m) => {
       if (m.type === "hello") setTargetReps(m.target_reps);
       else if (m.type === "state") setLive(m);
       else if (m.type === "rep") {
+        repCountRef.current += 1;
         setReps((r) => [...r, m]);
         setFeedback(m.feedback); // once per repetition, never per frame
         speak(m.feedback);
       }
-    }, setSockStatus);
+    }, setSockStatus, s ? { id: s.id, key: s.ws_key } : undefined);
   };
 
   const loop = useCallback((m: Mode) => {
@@ -151,21 +199,22 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
         if (poseWarnRef.current) { poseWarnRef.current = false; setPoseWarn(false); }
       }
 
-      if (!frame.landmarks) { setStatus("No person detected. Step into view."); setAngles([]); return; }
-      const conf = frame.landmarks.filter((l) => l.visibility >= MIN_CONFIDENCE).length;
+      if (!lms) { setStatus("No person detected. Step into view."); setAngles([]); return; }
+      const conf = lms.filter((l) => l.visibility >= MIN_CONFIDENCE).length;
       setStatus(`Tracking: ${conf}/33 landmarks above confidence ${MIN_CONFIDENCE}`);
-      setAngles(bodyAngles(lms!));
+      setAngles(bodyAngles(lms));
     };
     tick();
   }, []);
 
-  const startDemo = () => {
+  const startDemo = async () => {
     stop();
     canvasRef.current!.width = 640;
     canvasRef.current!.height = 480;
+    setError(null);
+    await openSession(true);
     estRef.current = new DemoEstimator();
-    openSession();
-    setMode("demo"); setError(null); loop("demo");
+    setMode("demo"); loop("demo");
   };
 
   const startCamera = async () => {
@@ -176,7 +225,7 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
       });
       streamRef.current = stream;
       setDevices((await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput"));
-      stream.getVideoTracks()[0].addEventListener("ended", () => { stop(); setError("Camera disconnected."); });
+      stream.getVideoTracks()[0].addEventListener("ended", () => { void stopAndSave(); setError("Camera disconnected."); });
       const v = videoRef.current!;
       v.srcObject = stream;
       await v.play();
@@ -184,7 +233,7 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
       canvasRef.current!.height = v.videoHeight || 480;
       setStatus("Loading pose model...");
       estRef.current = await MediaPipeEstimator.create();
-      openSession();
+      await openSession(false);
       setMode("camera"); loop("camera");
     } catch (e) {
       stop();
@@ -198,7 +247,9 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
   };
 
   const togglePause = () => { pausedRef.current = !pausedRef.current; setPaused(pausedRef.current); };
-  const running = mode !== "idle";
+  const resetLevel = async () => {
+    try { await api.resetAdaptation(exerciseId); setResult(null); } catch (e) { setError((e as Error).message); }
+  };
   const count = live?.counted_reps ?? 0;
   const progress = Math.max(0, Math.min(1, live?.progress ?? 0));
   const message = poseWarn ? "Pose not detected clearly. Adjust your position."
@@ -214,22 +265,30 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
       </p>
       <div className="row">
         <label>Exercise{" "}
-          <select value={exerciseId} onChange={(e) => { setExerciseId(e.target.value); setDifficulty(1); }} disabled={running}>
+          <select value={exerciseId} onChange={(e) => { setExerciseId(e.target.value); setDifficulty(1); setResult(null); }} disabled={running}>
             {exercises.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
           </select>
         </label>
-        <label>Difficulty (manual){" "}
+        <label>Level{" "}
           <select value={difficulty} onChange={(e) => setDifficulty(Number(e.target.value))} disabled={running}>
-            {levels.map((l) => <option key={l} value={l}>Level {l}</option>)}
+            {levels.map((l) => <option key={l} value={l}>Level {l}{adaptive && Number(l) === adaptive.recommended_level ? " (suggested)" : ""}</option>)}
           </select>
         </label>
         <label><input type="checkbox" checked={audio} onChange={(e) => { setAudio(e.target.checked); audioRef.current = e.target.checked; }} /> Audio feedback</label>
       </div>
+      {adaptive && adaptive.source === "history" && (
+        <p className="muted">
+          Suggested level {adaptive.recommended_level} after your last session ({adaptive.last_action}).
+          {adaptive.last_reasons[0] ? ` ${adaptive.last_reasons[0]}` : ""} You can choose another level; it is a suggestion only.{" "}
+          <button className="link" onClick={resetLevel} disabled={running}>Reset to default level</button>
+        </p>
+      )}
+      {!user && <p className="muted">Guest mode: level suggestions need an account, so the default level is used.</p>}
       <div className="row">
         <button onClick={startCamera}>Start camera</button>
         <button onClick={startDemo}>Synthetic demo</button>
         <button onClick={togglePause} disabled={!running}>{paused ? "Resume" : "Pause"}</button>
-        <button onClick={stop} disabled={!running}>Stop</button>
+        <button onClick={() => void stopAndSave()} disabled={!running}>Stop and save</button>
         {devices.length > 1 && (
           <select value={deviceId} onChange={(e) => setDeviceId(e.target.value)} aria-label="Camera">
             {devices.map((d, i) => <option key={d.deviceId} value={d.deviceId}>{d.label || `Camera ${i + 1}`}</option>)}
@@ -238,7 +297,7 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
       </div>
       {error && <p className="error" role="alert">{error}</p>}
       {(sockStatus === "failed") && <p className="error" role="alert">Analysis backend unreachable: pose is shown but reps are not counted. Start the backend and restart the session.</p>}
-      <p aria-live="polite"><strong>Status:</strong> {status}{mode === "demo" && " (synthetic data, not a real person; only elbow flexion moves)"}</p>
+      <p aria-live="polite"><strong>Status:</strong> {status}{mode === "demo" && " (synthetic data, not a real person; only elbow flexion moves; demo sessions are never saved to your history)"}</p>
 
       <div className="session">
         <div className="stage">
@@ -253,6 +312,9 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
           <p className="feedback" aria-live="polite">{message || "Start moving to begin."}</p>
         </div>
       </div>
+
+      {saving && <p className="muted">Saving session...</p>}
+      {result && <RecommendationCard result={result} />}
 
       <h3>Repetitions</h3>
       <table className="angles">

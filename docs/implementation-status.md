@@ -52,6 +52,16 @@
 - [x] Reading: (1) with the SAME estimator on both sides the transfer result (0.61) is about the same as the earlier mocap-skeleton test (0.61), so the skeleton-source difference was not what limited transfer; the gap to the in-domain 0.72 reflects genuine dataset/setup shift (people, camera, lighting, how errors were produced). (2) The posture-feature benefit over angle-only holds on independent data and with the full feature set, but the absolute level is low. (3) The model still labels almost everything incorrect on new data (recall 0.99, precision 0.47 vs base rate 0.40): the decision threshold does not transfer, so this is not a usable classifier. (4) Arm abduction transfers poorly. (5) 9 participants and a lenient CI: treat as preliminary.
 - [ ] Still open: repetition-count evaluation against Segmentation.csv, own webcam recordings, probability calibration / threshold selection on a validation set, review of class definitions by a rehabilitation professional
 
+## Phase 5 - Adaptive personalization, accounts, persistence (done; synthetic-data tests + one browser run)
+- [x] Adaptive controller (backend/app/personalization): config file, session classification, multi-session hysteresis, safety bounds, pause, reset, explainable reasons. Independent of camera/DB. Docs: docs/adaptive-controller.md. 28 unit tests incl. long random histories and a mutation check.
+- [x] Accounts and profiles: register/login/logout/me/update/delete (scrypt hashing, hashed bearer tokens, no username enumeration, validated profile + preferences); guest mode; per-session secret for the live stream.
+- [x] Persistence: users, sessions, repetitions (with counted/reliable), adaptive decisions; old prototype databases upgrade in place (tested; also happened for real on the dev DB). Repetitions are saved server-side as they finish on the WebSocket.
+- [x] API: POST /sessions, GET /sessions(/id), POST /sessions/{id}/repetitions, POST /sessions/{id}/complete, POST /adaptation/recommend (stateless), GET /adaptation/state, POST /adaptation/reset, GET /analytics/summary and /progress. Demo and guest sessions never feed history or analytics.
+- [x] Frontend: account panel (guest / sign in / register / delete my data), suggested level, "Stop and save", recommendation card with reasons and safety note, per-user session table. Verified in the browser (register, demo session, recommendation card, account deletion; test account removed, DB empty afterwards).
+- [x] 109 backend tests pass.
+- [ ] NOT verified: real-camera sessions through the full adaptive loop; the adaptive thresholds on real users; any claim that adaptation helps recovery (needs a study). Increase path was verified through the API with synthetic streams, not by hand in the browser (demo sessions are deliberately excluded from history).
+- [ ] Not yet built: adaptive-vs-fixed simulation report, dashboard charts (Phase 6), exportable CSV, settings page, AR/3D (Phase 7)
+
 ## Later phases: not started
 Pose estimation, angles, repetition counter, assessment, ML, adaptation, dashboard, AR, 3D, evaluation.
 

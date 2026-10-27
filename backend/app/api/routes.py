@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+import secrets
+
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from app.core.config import DISCLAIMER, settings
-from app.database.db import ExerciseSession, get_db
+from app.database.db import ExerciseSession, SessionLocal
 from app.exercises.library import Exercise, get_exercise, load_exercises
 from app.ml.inference import model_status
+from app.services.adaptive_service import MAX_REPS_PER_SESSION, add_repetition
 from app.services.analysis import RepResult, StreamAnalyzer, analyze_series
 
 router = APIRouter(prefix="/api")
@@ -16,22 +17,6 @@ class Health(BaseModel):
     status: str
     version: str
     disclaimer: str
-
-
-class SessionCreate(BaseModel):
-    exercise_id: str
-    user_id: str | None = None
-    is_demo: bool = False
-    difficulty: int = Field(default=1, ge=1, le=5)
-
-
-class SessionOut(BaseModel):
-    id: str
-    exercise_id: str
-    user_id: str | None
-    is_demo: bool
-    difficulty: int
-    model_config = {"from_attributes": True}
 
 
 class AngleSample(BaseModel):
@@ -76,23 +61,43 @@ def _rep_out(r: RepResult) -> RepOut:
     )
 
 
+def _persist_rep(session_id: str, rep: RepOut) -> None:
+    """Store a finished repetition against the session the stream is bound to (own DB session: the socket is long-lived)."""
+    with SessionLocal() as db:
+        s = db.get(ExerciseSession, session_id)
+        if s is not None and s.ended_at is None and len(s.repetitions) < MAX_REPS_PER_SESSION:
+            add_repetition(db, s, rep.index, rep.label, rep.score, rep.reliable, rep.counted, rep.features)
+
+
 @router.websocket("/ws/analysis")
-async def analysis_ws(ws: WebSocket, exercise_id: str, difficulty: int = 1) -> None:
+async def analysis_ws(ws: WebSocket, exercise_id: str, difficulty: int = 1, session_id: str | None = None,
+                      key: str | None = None) -> None:
     """Live stream: client sends {"t": seconds, "angle": deg|null}; server replies with state per frame
-    and a "rep" message whenever a repetition finishes. Pose estimation stays in the browser."""
+    and a "rep" message whenever a repetition finishes. Pose estimation stays in the browser.
+
+    With session_id + key (returned when the session was created) finished repetitions are also saved to that session."""
     await ws.accept()
     ex = get_exercise(exercise_id)
     try:
         if ex is None:
             await ws.close(code=4404, reason="unknown exercise")
             return
+        if session_id is not None:
+            with SessionLocal() as db:
+                s = db.get(ExerciseSession, session_id)
+                ok = (s is not None and s.ws_key is not None and key is not None and secrets.compare_digest(s.ws_key, key)
+                      and s.exercise_id == ex.id and s.difficulty == difficulty and s.ended_at is None)
+            if not ok:
+                await ws.close(code=4403, reason="session not found, closed, or key/exercise/level mismatch")
+                return
         try:
             sa = StreamAnalyzer(ex, difficulty)
         except ValueError as e:
             await ws.close(code=4422, reason=str(e)[:100])
             return
         await ws.send_json({"type": "hello", "exercise_id": ex.id, "difficulty": difficulty,
-                            "target_reps": sa.level["target_reps"], "disclaimer": DISCLAIMER})
+                            "target_reps": sa.level["target_reps"], "disclaimer": DISCLAIMER,
+                            "saving": session_id is not None})
         last_t = -1.0
         while True:
             msg = await ws.receive_json()
@@ -110,7 +115,10 @@ async def analysis_ws(ws: WebSocket, exercise_id: str, difficulty: int = 1) -> N
             await ws.send_json({"type": "state", "phase": u.phase, "counted_reps": u.counted_reps,
                                 "angle": u.angle, "progress": u.progress})
             if u.rep is not None:
-                await ws.send_json({"type": "rep", **_rep_out(u.rep).model_dump()})
+                rep = _rep_out(u.rep)
+                if session_id is not None:
+                    _persist_rep(session_id, rep)
+                await ws.send_json({"type": "rep", **rep.model_dump()})
     except WebSocketDisconnect:
         return
 
@@ -153,26 +161,3 @@ def exercise_detail(exercise_id: str) -> Exercise:
     if ex is None:
         raise HTTPException(404, f"Unknown exercise '{exercise_id}'")
     return ex
-
-
-@router.post("/sessions", response_model=SessionOut, status_code=201)
-def create_session(body: SessionCreate, db: Session = Depends(get_db)) -> ExerciseSession:
-    if get_exercise(body.exercise_id) is None:
-        raise HTTPException(404, f"Unknown exercise '{body.exercise_id}'")
-    s = ExerciseSession(**body.model_dump())
-    db.add(s)
-    db.commit()
-    return s
-
-
-@router.get("/sessions", response_model=list[SessionOut])
-def list_sessions(db: Session = Depends(get_db)) -> list[ExerciseSession]:
-    return list(db.scalars(select(ExerciseSession).order_by(ExerciseSession.started_at.desc())))
-
-
-@router.get("/sessions/{session_id}", response_model=SessionOut)
-def get_session(session_id: str, db: Session = Depends(get_db)) -> ExerciseSession:
-    s = db.get(ExerciseSession, session_id)
-    if s is None:
-        raise HTTPException(404, "Session not found")
-    return s

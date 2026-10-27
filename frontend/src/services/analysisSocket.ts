@@ -17,9 +17,11 @@ export class AnalysisSocket {
     difficulty: number,
     private onMsg: (m: AnalysisMsg) => void,
     private onStatus: (s: SocketStatus) => void,
+    session?: { id: string; key: string }, // per-session secret (not an account credential): lets the server save repetitions
   ) {
     const scheme = location.protocol === "https:" ? "wss" : "ws";
-    this.ws = new WebSocket(`${scheme}://${location.host}/api/ws/analysis?exercise_id=${encodeURIComponent(exerciseId)}&difficulty=${difficulty}`);
+    const saving = session ? `&session_id=${encodeURIComponent(session.id)}&key=${encodeURIComponent(session.key)}` : "";
+    this.ws = new WebSocket(`${scheme}://${location.host}/api/ws/analysis?exercise_id=${encodeURIComponent(exerciseId)}&difficulty=${difficulty}${saving}`);
     onStatus("connecting");
     this.ws.onopen = () => onStatus("open");
     this.ws.onclose = (e) => onStatus(e.code === 1000 || e.code === 1005 ? "closed" : "failed");
