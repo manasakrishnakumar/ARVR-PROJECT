@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { bodyAngles, MIN_CONFIDENCE, type JointAngles } from "../pose/angles";
+import { bodyAngles, jointAngle, MIN_CONFIDENCE, type JointAngles } from "../pose/angles";
 import { DemoEstimator } from "../pose/demo";
 import { MediaPipeEstimator } from "../pose/mediapipe";
-import { SKELETON, type PoseEstimator, type PoseFrame } from "../pose/types";
+import { LANDMARK_INDEX, SKELETON, type PoseEstimator, type PoseFrame } from "../pose/types";
+import { AnalysisSocket, type RepMsg, type SocketStatus, type StateMsg } from "../services/analysisSocket";
+import type { Exercise } from "../types/api";
 
 type Mode = "idle" | "camera" | "demo";
+const SEND_INTERVAL_MS = 66; // ~15 Hz is plenty for rep counting
 
 function draw(canvas: HTMLCanvasElement, frame: PoseFrame | null, mirror: boolean) {
   const ctx = canvas.getContext("2d")!;
@@ -30,13 +33,26 @@ function draw(canvas: HTMLCanvasElement, frame: PoseFrame | null, mirror: boolea
   });
 }
 
-export default function PoseLab() {
+const LABELS: Record<string, string> = {
+  acceptable: "Acceptable", insufficient_range: "Range short", incomplete_repetition: "Incomplete",
+  too_fast: "Too fast", uncontrolled: "Uncontrolled", insufficient_data: "Not enough data",
+};
+
+export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const estRef = useRef<PoseEstimator | null>(null);
   const rafRef = useRef(0);
   const streamRef = useRef<MediaStream | null>(null);
+  const sockRef = useRef<AnalysisSocket | null>(null);
   const pausedRef = useRef(false);
+  const exRef = useRef<Exercise | null>(null);
+  const t0Ref = useRef(0);
+  const lastSendRef = useRef(0);
+  const nullSinceRef = useRef<number | null>(null);
+  const poseWarnRef = useRef(false);
+  const audioRef = useRef(false);
+
   const [mode, setMode] = useState<Mode>("idle");
   const [paused, setPaused] = useState(false);
   const [status, setStatus] = useState("Not started");
@@ -45,20 +61,61 @@ export default function PoseLab() {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState("");
 
+  const [exerciseId, setExerciseId] = useState("elbow_flexion");
+  const [difficulty, setDifficulty] = useState(1);
+  const [live, setLive] = useState<StateMsg | null>(null);
+  const [targetReps, setTargetReps] = useState(0);
+  const [reps, setReps] = useState<RepMsg[]>([]);
+  const [feedback, setFeedback] = useState<string>("");
+  const [sockStatus, setSockStatus] = useState<SocketStatus | "none">("none");
+  const [poseWarn, setPoseWarn] = useState(false);
+  const [audio, setAudio] = useState(false);
+
+  const exercise = exercises.find((e) => e.id === exerciseId) ?? null;
+  const levels = exercise ? Object.keys(exercise.difficulty_levels) : ["1"];
+
   const stop = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
     streamRef.current?.getTracks().forEach((t) => t.stop()); // camera shutdown
     streamRef.current = null;
+    sockRef.current?.close();
+    sockRef.current = null;
     estRef.current?.close();
     estRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     const c = canvasRef.current;
     if (c) c.getContext("2d")!.clearRect(0, 0, c.width, c.height);
     pausedRef.current = false;
+    poseWarnRef.current = false;
+    nullSinceRef.current = null;
     setMode("idle"); setPaused(false); setAngles([]); setStatus("Stopped");
+    setSockStatus("none"); setPoseWarn(false); setLive(null);
   }, []);
 
   useEffect(() => stop, [stop]);
+
+  const speak = (text: string) => {
+    if (audioRef.current && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+    }
+  };
+
+  const openSession = () => {
+    exRef.current = exercise;
+    t0Ref.current = performance.now();
+    lastSendRef.current = 0;
+    setReps([]); setFeedback(""); setLive(null);
+    sockRef.current = new AnalysisSocket(exerciseId, difficulty, (m) => {
+      if (m.type === "hello") setTargetReps(m.target_reps);
+      else if (m.type === "state") setLive(m);
+      else if (m.type === "rep") {
+        setReps((r) => [...r, m]);
+        setFeedback(m.feedback); // once per repetition, never per frame
+        speak(m.feedback);
+      }
+    }, setSockStatus);
+  };
 
   const loop = useCallback((m: Mode) => {
     let lastTs = -1;
@@ -72,6 +129,26 @@ export default function PoseLab() {
       lastTs = ts;
       const frame = est.detect(video, ts);
       draw(canvas, frame, m === "camera");
+
+      // exercise angle -> backend (which owns counting and assessment)
+      const ex = exRef.current;
+      let exAngle: number | null = null;
+      if (frame.landmarks && ex) {
+        const [a, b, c] = ex.landmarks.map((n) => frame.landmarks![LANDMARK_INDEX[n]]);
+        exAngle = jointAngle(a, b, c);
+      }
+      if (ts - lastSendRef.current >= SEND_INTERVAL_MS) {
+        lastSendRef.current = ts;
+        sockRef.current?.send((ts - t0Ref.current) / 1000, exAngle);
+      }
+      if (exAngle === null) {
+        nullSinceRef.current ??= ts;
+        if (ts - nullSinceRef.current > 1000 && !poseWarnRef.current) { poseWarnRef.current = true; setPoseWarn(true); }
+      } else {
+        nullSinceRef.current = null;
+        if (poseWarnRef.current) { poseWarnRef.current = false; setPoseWarn(false); }
+      }
+
       if (!frame.landmarks) { setStatus("No person detected. Step into view."); setAngles([]); return; }
       const conf = frame.landmarks.filter((l) => l.visibility >= MIN_CONFIDENCE).length;
       setStatus(`Tracking: ${conf}/33 landmarks above confidence ${MIN_CONFIDENCE}`);
@@ -85,6 +162,7 @@ export default function PoseLab() {
     canvasRef.current!.width = 640;
     canvasRef.current!.height = 480;
     estRef.current = new DemoEstimator();
+    openSession();
     setMode("demo"); setError(null); loop("demo");
   };
 
@@ -104,6 +182,7 @@ export default function PoseLab() {
       canvasRef.current!.height = v.videoHeight || 480;
       setStatus("Loading pose model...");
       estRef.current = await MediaPipeEstimator.create();
+      openSession();
       setMode("camera"); loop("camera");
     } catch (e) {
       stop();
@@ -117,19 +196,38 @@ export default function PoseLab() {
   };
 
   const togglePause = () => { pausedRef.current = !pausedRef.current; setPaused(pausedRef.current); };
+  const running = mode !== "idle";
+  const count = live?.counted_reps ?? 0;
+  const progress = Math.max(0, Math.min(1, live?.progress ?? 0));
+  const message = poseWarn ? "Pose not detected clearly. Adjust your position."
+    : targetReps && count >= targetReps ? "Target repetitions reached. Take a break if you feel discomfort."
+    : feedback;
 
   return (
     <section className="card">
-      <h2>Pose lab</h2>
+      <h2>Live session</h2>
       <p className="muted">
-        Processing runs locally in your browser. No video is uploaded or stored. Angles are 2D image-plane
-        estimates, not clinical measurements.
+        Pose estimation runs locally in your browser; only joint angles (numbers) go to the local backend.
+        No video is uploaded or stored. Angles are 2D image-plane estimates, not clinical measurements.
       </p>
+      <div className="row">
+        <label>Exercise{" "}
+          <select value={exerciseId} onChange={(e) => { setExerciseId(e.target.value); setDifficulty(1); }} disabled={running}>
+            {exercises.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+          </select>
+        </label>
+        <label>Difficulty (manual){" "}
+          <select value={difficulty} onChange={(e) => setDifficulty(Number(e.target.value))} disabled={running}>
+            {levels.map((l) => <option key={l} value={l}>Level {l}</option>)}
+          </select>
+        </label>
+        <label><input type="checkbox" checked={audio} onChange={(e) => { setAudio(e.target.checked); audioRef.current = e.target.checked; }} /> Audio feedback</label>
+      </div>
       <div className="row">
         <button onClick={startCamera}>Start camera</button>
         <button onClick={startDemo}>Synthetic demo</button>
-        <button onClick={togglePause} disabled={mode === "idle"}>{paused ? "Resume" : "Pause"}</button>
-        <button onClick={stop} disabled={mode === "idle"}>Stop</button>
+        <button onClick={togglePause} disabled={!running}>{paused ? "Resume" : "Pause"}</button>
+        <button onClick={stop} disabled={!running}>Stop</button>
         {devices.length > 1 && (
           <select value={deviceId} onChange={(e) => setDeviceId(e.target.value)} aria-label="Camera">
             {devices.map((d, i) => <option key={d.deviceId} value={d.deviceId}>{d.label || `Camera ${i + 1}`}</option>)}
@@ -137,11 +235,39 @@ export default function PoseLab() {
         )}
       </div>
       {error && <p className="error" role="alert">{error}</p>}
-      <p aria-live="polite"><strong>Status:</strong> {status}{mode === "demo" && " (synthetic data, not a real person)"}</p>
-      <div className="stage">
-        <video ref={videoRef} className={mode === "camera" ? "mirror" : "hidden"} playsInline muted />
-        <canvas ref={canvasRef} className="overlay" width={640} height={480} />
+      {(sockStatus === "failed") && <p className="error" role="alert">Analysis backend unreachable: pose is shown but reps are not counted. Start the backend and restart the session.</p>}
+      <p aria-live="polite"><strong>Status:</strong> {status}{mode === "demo" && " (synthetic data, not a real person; only elbow flexion moves)"}</p>
+
+      <div className="session">
+        <div className="stage">
+          <video ref={videoRef} className={mode === "camera" ? "mirror" : "hidden"} playsInline muted />
+          <canvas ref={canvasRef} className="overlay" width={640} height={480} />
+        </div>
+        <div className="stats">
+          <div className="big" aria-label="Repetitions">{count}<span className="muted"> / {targetReps || "-"} reps</span></div>
+          <div className="chip">{live ? live.phase.replace("_", " ") : "waiting"}</div>
+          <div className="bar" aria-label="Movement progress"><div style={{ width: `${progress * 100}%` }} /></div>
+          <p className="muted">Angle {live?.angle != null ? `${live.angle.toFixed(0)}°` : "n/a"} · Level {difficulty}{exercise?.illustrative_only ? " · illustrative targets" : ""}</p>
+          <p className="feedback" aria-live="polite">{message || "Start moving to begin."}</p>
+        </div>
       </div>
+
+      <h3>Repetitions</h3>
+      <table className="angles">
+        <thead><tr><th>#</th><th>Result</th><th>Score</th><th>Range</th><th>Time</th><th>Why</th></tr></thead>
+        <tbody>
+          {reps.length === 0 && <tr><td colSpan={6} className="muted">None yet</td></tr>}
+          {reps.map((r) => (
+            <tr key={r.index}>
+              <td>{r.index}</td><td>{LABELS[r.label] ?? r.label}{r.counted ? "" : " (not counted)"}</td>
+              <td>{r.score == null ? "n/a" : r.score.toFixed(2)}</td>
+              <td>{r.features.rom_deg?.toFixed(0)}°</td><td>{r.features.duration_s?.toFixed(1)}s</td><td className="muted">{r.explanation}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3>Joint angles</h3>
       <table className="angles">
         <thead><tr><th>Joint</th><th>Angle</th></tr></thead>
         <tbody>

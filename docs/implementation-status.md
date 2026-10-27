@@ -15,9 +15,11 @@
 - [x] Per-repetition features, rule-based assessment (acceptable, insufficient_range, incomplete_repetition, too_fast, uncontrolled, insufficient_data)
 - [x] POST /api/assessment/evaluate (angle series in, repetitions and assessments out)
 - [x] 22 backend tests pass; fixed AngleSmoother permanently rejecting persistent jumps
-- [ ] NOT validated on real human recordings; thresholds are illustrative; counter not yet wired into the live Pose lab page
-- [ ] 3+ exercises 'observable feedback' in the UI pending frontend integration
+- [x] Live wiring: WebSocket /api/ws/analysis (StreamAnalyzer) <-> Pose lab session UI: exercise + manual difficulty select, rep counter vs target, phase chip, progress bar, once-per-rep feedback, optional audio, rep table, pose-lost warning. 25 backend tests pass; verified in browser with synthetic demo (3/5 reps counted, all 'acceptable').
+- [ ] Real webcam path and non-elbow exercises NOT yet tested live (demo only animates elbow flexion); thresholds illustrative; no real human recordings yet
+- [ ] Sessions are not persisted yet (Phase 5/6); difficulty is manual until the adaptive controller exists
 
 ## Later phases: not started
 Pose estimation, angles, repetition counter, assessment, ML, adaptation, dashboard, AR, 3D, evaluation.
+
 

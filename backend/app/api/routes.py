@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.config import DISCLAIMER, settings
 from app.database.db import ExerciseSession, get_db
 from app.exercises.library import Exercise, get_exercise, load_exercises
-from app.services.analysis import analyze_series
+from app.services.analysis import RepResult, StreamAnalyzer, analyze_series
 
 router = APIRouter(prefix="/api")
 
@@ -67,6 +67,53 @@ class EvaluateResponse(BaseModel):
     disclaimer: str = DISCLAIMER
 
 
+def _rep_out(r: RepResult) -> RepOut:
+    return RepOut(
+        index=r.repetition.index, t_start=r.repetition.t_start, t_end=r.repetition.t_end, counted=r.counted,
+        label=r.assessment.label, score=r.assessment.score, reliable=r.assessment.reliable,
+        explanation=r.assessment.explanation, feedback=r.assessment.feedback, features=r.assessment.features,
+    )
+
+
+@router.websocket("/ws/analysis")
+async def analysis_ws(ws: WebSocket, exercise_id: str, difficulty: int = 1) -> None:
+    """Live stream: client sends {"t": seconds, "angle": deg|null}; server replies with state per frame
+    and a "rep" message whenever a repetition finishes. Pose estimation stays in the browser."""
+    await ws.accept()
+    ex = get_exercise(exercise_id)
+    try:
+        if ex is None:
+            await ws.close(code=4404, reason="unknown exercise")
+            return
+        try:
+            sa = StreamAnalyzer(ex, difficulty)
+        except ValueError as e:
+            await ws.close(code=4422, reason=str(e)[:100])
+            return
+        await ws.send_json({"type": "hello", "exercise_id": ex.id, "difficulty": difficulty,
+                            "target_reps": sa.level["target_reps"], "disclaimer": DISCLAIMER})
+        last_t = -1.0
+        while True:
+            msg = await ws.receive_json()
+            try:
+                t = float(msg["t"])
+                angle = msg.get("angle")
+                angle = None if angle is None else float(angle)
+                if t < last_t or (angle is not None and not 0 <= angle <= 360):
+                    raise ValueError
+            except (KeyError, TypeError, ValueError):
+                await ws.send_json({"type": "error", "detail": "expected ordered {t, angle} with angle in 0..360 or null"})
+                continue
+            last_t = t
+            u = sa.push(t, angle)
+            await ws.send_json({"type": "state", "phase": u.phase, "counted_reps": u.counted_reps,
+                                "angle": u.angle, "progress": u.progress})
+            if u.rep is not None:
+                await ws.send_json({"type": "rep", **_rep_out(u.rep).model_dump()})
+    except WebSocketDisconnect:
+        return
+
+
 @router.post("/assessment/evaluate", response_model=EvaluateResponse)
 def evaluate(body: EvaluateRequest) -> EvaluateResponse:
     ex = get_exercise(body.exercise_id)
@@ -79,12 +126,7 @@ def evaluate(body: EvaluateRequest) -> EvaluateResponse:
         res = analyze_series(ex, body.difficulty, [(s.t, s.angle) for s in body.samples])
     except ValueError as e:
         raise HTTPException(422, str(e)) from e
-    attempts = [
-        RepOut(index=r.repetition.index, t_start=r.repetition.t_start, t_end=r.repetition.t_end, counted=r.counted,
-               label=r.assessment.label, score=r.assessment.score, reliable=r.assessment.reliable,
-               explanation=r.assessment.explanation, feedback=r.assessment.feedback, features=r.assessment.features)
-        for r in res.attempts
-    ]
+    attempts = [_rep_out(r) for r in res.attempts]
     return EvaluateResponse(exercise_id=ex.id, difficulty=body.difficulty, counted_reps=res.counted_reps,
                             attempts=attempts, final_phase=res.final_phase)
 

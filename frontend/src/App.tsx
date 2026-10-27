@@ -46,7 +46,7 @@ export default function App() {
           ))}
         </ul>
       </section>
-      <PoseLab />
+      <PoseLab exercises={exercises} />
     </main>
   );
 }
