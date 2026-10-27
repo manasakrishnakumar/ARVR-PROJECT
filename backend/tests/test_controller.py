@@ -130,6 +130,14 @@ def test_severe_session_recommends_pause_and_never_increases():
     assert "break" in r.reasons[0].lower() and r.feedback_intensity == "high"
 
 
+def test_pause_reason_names_the_real_trigger():
+    low_score = rec(2, reps(n=6, score=0.1, bad=6))
+    assert "average score was very low" in low_score.reasons[0]
+    all_flagged_but_decent_score = rec(2, reps(n=6, score=0.72, bad=6))  # partial-credit scores, every repetition flagged
+    assert all_flagged_but_decent_score.classification == "severe" and "100% of the repetitions were flagged" in all_flagged_but_decent_score.reasons[0]
+    assert "very low" not in all_flagged_but_decent_score.reasons[0]
+
+
 def test_unknown_level_is_an_error():
     with pytest.raises(ValueError):
         rec(7)

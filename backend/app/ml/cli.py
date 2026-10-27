@@ -13,6 +13,15 @@ from app.ml.synthetic_data import generate_dataset
 from app.ml.training import train_and_evaluate
 
 
+def _write_result(path: Path | None, kind: str, title: str, caveat: str, data: dict) -> None:
+    """Aggregate metrics only (never raw data), for the research page and for the thesis tables."""
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"kind": kind, "title": title, "caveat": caveat, "data": data}, indent=2), encoding="utf-8")
+    print(f"Results JSON: {path}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -24,6 +33,7 @@ def main() -> None:
     t.add_argument("--data", type=Path, required=True)
     t.add_argument("--seed", type=int, default=0)
     t.add_argument("--artifacts", type=Path, default=settings.artifacts_dir)
+    t.add_argument("--json", type=Path, default=None, help="also write aggregate results as JSON (used by the research page)")
     r = sub.add_parser("import-rehab26", help="convert REHAB26-ViewAngles (CC BY-NC) into a repetition CSV")
     r.add_argument("--root", type=Path, default=settings.artifacts_dir.parent / "datasets" / "external" / "rehab26")
     r.add_argument("--out", type=Path, default=None)
@@ -43,6 +53,8 @@ def main() -> None:
     iv.add_argument("--out", type=Path, default=None)
     ex = sub.add_parser("external", help="train on one repetition CSV, test on another (binary, nothing tuned on test)")
     ex.add_argument("--full-features", action="store_true", help="also evaluate the complete feature set (needs MediaPipe on both sides)")
+    ex.add_argument("--json", type=Path, default=None, help="also write aggregate results as JSON (used by the research page)")
+    ex.add_argument("--title", type=str, default=None)
     ex.add_argument("--train", type=Path, required=True)
     ex.add_argument("--test", type=Path, required=True)
     ex.add_argument("--report", type=Path, required=True)
@@ -51,6 +63,7 @@ def main() -> None:
     lo.add_argument("--data", type=Path, required=True)
     lo.add_argument("--seed", type=int, default=0)
     lo.add_argument("--report", type=Path, default=None)
+    lo.add_argument("--json", type=Path, default=None, help="also write aggregate results as JSON (used by the research page)")
     a = ap.parse_args()
 
     if a.cmd == "import-rehab26":
@@ -127,6 +140,9 @@ def main() -> None:
         ev = external_validation(tr, te, seed=a.seed, full_features=a.full_features)
         a.report.write_text(render_external_report(ev, str(tr[0]["source"]), str(te[0]["source"])), encoding="utf-8")
         print(f"Report: {a.report}")
+        _write_result(a.json, "external", a.title or f"External validation: {tr[0]['source']} -> {te[0]['source']}",
+                      "Binary correct-vs-incorrect, nothing tuned on the test dataset, few participants, wide intervals. "
+                      "Preliminary and non-clinical.", ev)
         for n, m in ev["methods"].items():
             lo_, hi_ = m["balanced_accuracy_ci95_participant_bootstrap"]
             print(f"  {n:45s} balanced_acc={m['balanced_accuracy']:.3f} (CI {lo_:.3f}-{hi_:.3f}) incorrect_f1={m['incorrect_f1']:.3f}")
@@ -138,6 +154,9 @@ def main() -> None:
         report = a.report or a.data.with_name("lopo_report.md")
         report.write_text(render_lopo_report(ev, str(rows[0]["source"])), encoding="utf-8")
         print(f"Report: {report}")
+        _write_result(a.json, "lopo", f"Leave-one-participant-out evaluation on {rows[0]['source']}",
+                      "Healthy volunteers performing deliberate errors, single camera views, 5 participants. Tuned methods choose "
+                      "settings on training participants only. Preliminary and non-clinical.", ev)
         for n, m in ev["methods"].items():
             b = m["binary_correct_vs_incorrect"]
             print(f"  {n:18s} 3-class acc={m['accuracy']:.3f} macro_f1={m['macro_f1']:.3f} | "
@@ -153,6 +172,11 @@ def main() -> None:
         for name in ("majority_class", "rule_based", "random_forest"):
             print(f"  {name:15s} accuracy={ev[name]['accuracy']:.3f} macro_f1={ev[name]['macro_f1']:.3f}")
         print(json.dumps(ev["_sizes"]))
+        rows_src = sorted({str(r["source"]) for r in read_csv(a.data)})
+        _write_result(a.json, "synthetic" if rows_src == ["synthetic"] else "train",
+                      "Pipeline check on SYNTHETIC data" if rows_src == ["synthetic"] else f"Train/test on {', '.join(rows_src)}",
+                      "SYNTHETIC DATA ONLY: labels come from a generator that mirrors the rule thresholds. Shows the pipeline runs; "
+                      "says nothing about accuracy on real people." if rows_src == ["synthetic"] else "Preliminary.", ev)
 
 
 if __name__ == "__main__":

@@ -78,12 +78,65 @@ export interface ProgressPoint {
   session_id: string;
   exercise_id: string;
   started_at: string;
+  is_demo: boolean;
   level: number;
   counted_reps: number | null;
   target_reps: number | null;
   quality: number | null;
   error_rate: number | null;
+  duration_s: number;
+  mean_rom_deg: number | null;
   classification: string | null;
   action: string | null;
   next_level: number | null;
+}
+
+export interface AnalyticsSummary {
+  total_sessions: number;
+  demo_sessions_included: boolean;
+  completed_repetitions: number;
+  average_quality_score: number | null;
+  total_duration_s: number;
+  error_categories: Record<string, number>;
+  sessions_by_exercise: Record<string, number>;
+  note: string;
+  disclaimer: string;
+}
+
+export interface Filters {
+  exercise_id?: string;
+  from?: string;
+  to?: string;
+  include_demo?: boolean;
+}
+
+export interface RepDetail {
+  index: number;
+  label: string | null;
+  score: number | null;
+  counted: boolean;
+  reliable: boolean;
+  range_of_motion_deg: number | null;
+  duration_s: number | null;
+}
+
+export interface SessionDetail {
+  id: string;
+  exercise_id: string;
+  is_demo: boolean;
+  difficulty: number;
+  started_at: string;
+  ended_at: string | null;
+  summary: { metrics?: SessionMetrics; classification?: string; action?: string; next_level?: number };
+  repetitions: RepDetail[];
+  decision: { action: string; from_level: number; to_level: number; classification: string; reasons: string[] } | null;
+}
+
+export interface ResearchResult {
+  id: string;
+  kind: "external" | "lopo" | "synthetic" | "train";
+  title: string;
+  caveat: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any;
 }

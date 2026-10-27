@@ -189,8 +189,9 @@ def recommend(cfg: AdaptiveConfig, levels: dict[str, dict], current_level: int, 
         streak = 1 + _streak(history, current_level, {"poor", "severe"})
         if cls == "severe":
             action = "pause"
-            reasons.append(f"Very low quality (score {metrics.quality:.2f}, {metrics.error_rate:.0%} of repetitions flagged). "
-                           "Consider a break and check with your rehabilitation professional.")
+            trigger = (f"the average score was very low ({metrics.quality:.2f})" if metrics.quality < cfg.pause.quality_below
+                       else f"{metrics.error_rate:.0%} of the repetitions were flagged (average score {metrics.quality:.2f})")
+            reasons.append(f"This session was difficult: {trigger}. Consider a break and check with your rehabilitation professional.")
         if streak >= cfg.decrease.confirm_sessions and current_level > lo:
             next_level = current_level - 1
             action = "decrease" if cls == "poor" else action

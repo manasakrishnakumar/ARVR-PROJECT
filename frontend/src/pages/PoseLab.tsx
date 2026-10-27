@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import RecommendationCard from "../components/RecommendationCard";
 import { bodyAngles, isotropic, jointAngle, MIN_CONFIDENCE, type JointAngles } from "../pose/angles";
 import { DemoEstimator } from "../pose/demo";
@@ -43,10 +44,11 @@ const LABELS: Record<string, string> = {
 interface Props {
   exercises: Exercise[];
   user: User | null;
-  onSessionSaved: () => void;
+  initialExerciseId?: string;
+  onSessionSaved?: () => void;
 }
 
-export default function PoseLab({ exercises, user, onSessionSaved }: Props) {
+export default function PoseLab({ exercises, user, initialExerciseId, onSessionSaved }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const estRef = useRef<PoseEstimator | null>(null);
@@ -71,7 +73,9 @@ export default function PoseLab({ exercises, user, onSessionSaved }: Props) {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState("");
 
-  const [exerciseId, setExerciseId] = useState("elbow_flexion");
+  const [exerciseId, setExerciseId] = useState(
+    initialExerciseId && exercises.some((e) => e.id === initialExerciseId) ? initialExerciseId : "elbow_flexion");
+  const [lastSessionId, setLastSessionId] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState(1);
   const [adaptive, setAdaptive] = useState<AdaptationState | null>(null);
   const [live, setLive] = useState<StateMsg | null>(null);
@@ -87,6 +91,9 @@ export default function PoseLab({ exercises, user, onSessionSaved }: Props) {
   const exercise = exercises.find((e) => e.id === exerciseId) ?? null;
   const levels = exercise ? Object.keys(exercise.difficulty_levels) : ["1"];
   const running = mode !== "idle";
+
+  useEffect(() => { audioRef.current = audio; }, [audio]);
+  useEffect(() => { if (user) setAudio(!!user.preferences?.audio_feedback); }, [user]); // spoken feedback default from settings
 
   // signed-in users start at the level the adaptive controller suggested after their last session
   useEffect(() => {
@@ -104,7 +111,8 @@ export default function PoseLab({ exercises, user, onSessionSaved }: Props) {
     setSaving(true);
     try {
       setResult(await api.completeSession(s.id));
-      onSessionSaved();
+      setLastSessionId(s.id);
+      onSessionSaved?.();
     } catch (e) {
       setError(`Could not save the session summary: ${(e as Error).message}`);
     } finally {
@@ -274,7 +282,7 @@ export default function PoseLab({ exercises, user, onSessionSaved }: Props) {
             {levels.map((l) => <option key={l} value={l}>Level {l}{adaptive && Number(l) === adaptive.recommended_level ? " (suggested)" : ""}</option>)}
           </select>
         </label>
-        <label><input type="checkbox" checked={audio} onChange={(e) => { setAudio(e.target.checked); audioRef.current = e.target.checked; }} /> Audio feedback</label>
+        <label><input type="checkbox" checked={audio} onChange={(e) => setAudio(e.target.checked)} /> Audio feedback</label>
       </div>
       {adaptive && adaptive.source === "history" && (
         <p className="muted">
@@ -315,6 +323,7 @@ export default function PoseLab({ exercises, user, onSessionSaved }: Props) {
 
       {saving && <p className="muted">Saving session...</p>}
       {result && <RecommendationCard result={result} />}
+      {result && lastSessionId && <p><Link className="btn" to={`/sessions/${lastSessionId}`}>View the full session summary</Link></p>}
 
       <h3>Repetitions</h3>
       <table className="angles">

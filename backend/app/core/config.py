@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     database_url: str = f"sqlite:///{(BACKEND_DIR / 'arvr.db').as_posix()}"
     exercises_dir: Path = BACKEND_DIR / "app" / "exercises" / "definitions"
     artifacts_dir: Path = BACKEND_DIR.parent / "artifacts"
+    results_dir: Path = BACKEND_DIR.parent / "docs" / "results"
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     store_raw_video: bool = False  # privacy default: never persist camera footage
 

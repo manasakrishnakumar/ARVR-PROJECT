@@ -1,5 +1,6 @@
 import type {
-  AdaptationState, CompleteOut, Exercise, Health, ProgressPoint, Recommendation, SessionCreated, User,
+  AdaptationState, AnalyticsSummary, CompleteOut, Exercise, Filters, Health, ProgressPoint, Recommendation,
+  ResearchResult, SessionCreated, SessionDetail, User,
 } from "../types/api";
 
 const TOKEN_KEY = "arvr.token";
@@ -59,6 +60,34 @@ export const api = {
   adaptationState: (exercise_id: string) =>
     request<AdaptationState>(`/api/adaptation/state?exercise_id=${encodeURIComponent(exercise_id)}`),
   resetAdaptation: (exercise_id: string) => post<Recommendation>("/api/adaptation/reset", { exercise_id }),
-  progress: (exercise_id?: string) =>
-    request<{ points: ProgressPoint[]; note: string }>(`/api/analytics/progress${exercise_id ? `?exercise_id=${exercise_id}` : ""}`),
+  progress: (f: Filters = {}) =>
+    request<{ points: ProgressPoint[]; note: string }>(`/api/analytics/progress${query(f)}`),
+  summary: (f: Filters = {}) => request<AnalyticsSummary>(`/api/analytics/summary${query(f)}`),
+  sessionDetail: (id: string) => request<SessionDetail>(`/api/sessions/${encodeURIComponent(id)}/detail`),
+  researchResults: () => request<{ results: ResearchResult[]; note: string }>("/api/research/results"),
+
+  /** Downloads the user's own CSV (needs the auth header, so it goes through fetch rather than a plain link). */
+  async exportCsv(kind: "sessions" | "repetitions", f: Filters = {}): Promise<void> {
+    const headers = new Headers();
+    const token = tokenStore.get();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    const res = await fetch(`/api/analytics/export.csv${query({ ...f }, { kind })}`, { headers });
+    if (!res.ok) throw new ApiError(res.status, `Export failed (${res.status})`);
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `arvr-${kind}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };
+
+function query(f: Filters, extra: Record<string, string> = {}): string {
+  const p = new URLSearchParams(extra);
+  if (f.exercise_id) p.set("exercise_id", f.exercise_id);
+  if (f.from) p.set("from", f.from);
+  if (f.to) p.set("to", f.to);
+  if (f.include_demo) p.set("include_demo", "true");
+  const s = p.toString();
+  return s ? `?${s}` : "";
+}

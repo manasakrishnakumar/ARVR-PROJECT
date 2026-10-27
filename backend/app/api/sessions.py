@@ -95,6 +95,41 @@ def get_session(session_id: str, user: User | None = Depends(current_user_option
     return owned_session(db, session_id, user)
 
 
+class RepDetail(BaseModel):
+    index: int
+    label: str | None = Field(validation_alias="quality_label")  # database column names differ from the API names
+    score: float | None = Field(validation_alias="quality_score")
+    counted: bool
+    reliable: bool
+    range_of_motion_deg: float | None
+    duration_s: float | None
+    model_config = {"from_attributes": True, "populate_by_name": True}
+
+
+class DecisionOut(BaseModel):
+    action: str
+    from_level: int
+    to_level: int
+    classification: str
+    reasons: list[str]
+
+
+class SessionDetail(SessionOut):
+    repetitions: list[RepDetail]
+    decision: DecisionOut | None
+
+
+@router.get("/sessions/{session_id}/detail", response_model=SessionDetail)
+def session_detail(session_id: str, user: User | None = Depends(current_user_optional), db: Session = Depends(get_db)):
+    """Everything for a session summary page: metrics, every repetition, and the recommendation made afterwards."""
+    s = owned_session(db, session_id, user)
+    d = db.scalar(select(AdaptiveDecision).where(AdaptiveDecision.session_id == s.id))
+    return SessionDetail(**SessionOut.model_validate(s).model_dump(),
+                         repetitions=[RepDetail.model_validate(r) for r in s.repetitions],
+                         decision=DecisionOut(action=d.action, from_level=d.from_level, to_level=d.to_level,
+                                              classification=d.classification, reasons=list(d.reasons or [])) if d else None)
+
+
 @router.post("/sessions/{session_id}/repetitions", status_code=201)
 def add_repetitions(session_id: str, reps: list[RepIn] = Body(max_length=MAX_REPS_PER_SESSION),
                     user: User | None = Depends(current_user_optional), db: Session = Depends(get_db)) -> dict:

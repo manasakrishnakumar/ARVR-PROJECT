@@ -62,6 +62,15 @@
 - [ ] NOT verified: real-camera sessions through the full adaptive loop; the adaptive thresholds on real users; any claim that adaptation helps recovery (needs a study). Increase path was verified through the API with synthetic streams, not by hand in the browser (demo sessions are deliberately excluded from history).
 - [ ] Not yet built: adaptive-vs-fixed simulation report, dashboard charts (Phase 6), exportable CSV, settings page, AR/3D (Phase 7)
 
+## Phase 6 - Frontend pages and dashboard (done; verified in the browser at desktop and phone width)
+- [x] Routed app (react-router): Landing, Exercise library (illustrative range diagrams, level tables), Live session (camera / synthetic demo, adaptive level, recommendation card), Session summary (/sessions/:id: metrics, chart, every repetition, the suggestion and its reasons), Dashboard, Research evaluation, Settings & privacy, Sign in / create account, 404. Shared layout with skip link, persistent safety banner, backend-down banner, keyboard focus styles, light/dark themes, responsive down to phone width (no horizontal page scroll on any page at 375 px); chart and camera pages are lazy-loaded.
+- [x] Dashboard (signed-in): totals, average score, time exercising, charts (score + flagged share, difficulty played vs suggested, movement range, repetitions vs target, issue categories), filters (exercise, date range, include-demo which is off by default and visibly labelled), session table linking to details, CSV export of sessions and repetitions. Empty, loading and error states. All labelled as experimental system metrics.
+- [x] Research page: renders the aggregate JSON written by the evaluation scripts (`--json`), including CI whiskers; synthetic results carry a prominent warning. Raw datasets are never exposed (a test asserts the JSON has no per-person rows).
+- [x] Settings & privacy: plain-language privacy notice, profile and spoken-feedback default, CSV download, per-exercise adaptive reset, delete account and data.
+- [x] Backend additions: GET /api/sessions/{id}/detail, /api/analytics/export.csv, date filters (`from`/`to`), duration and mean range per session, GET /api/research/results. Fixed: the pause reason no longer says "very low quality" when the trigger was a 100% flagged share with a moderate score.
+- [x] Tests: backend suite passes (see below). No frontend unit tests yet; frontend behaviour was checked by hand in the browser.
+- [ ] Not built: separate "pose visualization and movement analysis" page (the skeleton, live angles and per-repetition analysis live inside the Live session page), AR mode and 3D room (Phase 7), live-camera dashboard check on real camera sessions, automated browser tests, per-user charts of ML predictions (the ML classifier is not used in the live loop).
+
 ## Later phases: not started
 Pose estimation, angles, repetition counter, assessment, ML, adaptation, dashboard, AR, 3D, evaluation.
 

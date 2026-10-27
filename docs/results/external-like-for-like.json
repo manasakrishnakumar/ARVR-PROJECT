@@ -1,0 +1,449 @@
+{
+  "kind": "external",
+  "title": "External validation (like-for-like): train REHAB26, test REHAB24-6 videos, MediaPipe on both",
+  "caveat": "Binary correct-vs-incorrect, nothing tuned on the test dataset, few participants, wide intervals. Preliminary and non-clinical.",
+  "data": {
+    "shared_exercises": [
+      "shoulder_abduction",
+      "sit_to_stand"
+    ],
+    "n_train": 1110,
+    "n_test": 369,
+    "train_participants": [
+      "R26-P1",
+      "R26-P2",
+      "R26-P3",
+      "R26-P4",
+      "R26-P5"
+    ],
+    "test_participants": [
+      "P1",
+      "P2",
+      "P3",
+      "P4",
+      "P5",
+      "P6",
+      "P7",
+      "P8",
+      "P9"
+    ],
+    "test_incorrect_fraction": 0.4037940379403794,
+    "range_thresholds_from_train": {
+      "shoulder_abduction": 1.3000000000000005,
+      "sit_to_stand": 0.45000000000000007
+    },
+    "methods": {
+      "majority_class (train prior)": {
+        "n": 369,
+        "accuracy": 0.4037940379403794,
+        "balanced_accuracy": 0.5,
+        "incorrect_precision": 0.4037940379403794,
+        "incorrect_recall": 1.0,
+        "incorrect_f1": 0.5752895752895754,
+        "confusion_matrix [[TN, FP], [FN, TP]]": [
+          [
+            0,
+            220
+          ],
+          [
+            0,
+            149
+          ]
+        ],
+        "balanced_accuracy_ci95_participant_bootstrap": [
+          0.5,
+          0.5
+        ],
+        "by_exercise": {
+          "shoulder_abduction": {
+            "n": 178,
+            "accuracy": 0.4943820224719101,
+            "balanced_accuracy": 0.5,
+            "incorrect_precision": 0.4943820224719101,
+            "incorrect_recall": 1.0,
+            "incorrect_f1": 0.6616541353383459,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                0,
+                90
+              ],
+              [
+                0,
+                88
+              ]
+            ]
+          },
+          "sit_to_stand": {
+            "n": 191,
+            "accuracy": 0.3193717277486911,
+            "balanced_accuracy": 0.5,
+            "incorrect_precision": 0.3193717277486911,
+            "incorrect_recall": 1.0,
+            "incorrect_f1": 0.48412698412698413,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                0,
+                130
+              ],
+              [
+                0,
+                61
+              ]
+            ]
+          }
+        },
+        "by_participant_balanced_accuracy": {
+          "P1": 0.5,
+          "P2": 0.5,
+          "P3": 0.5,
+          "P4": 0.5,
+          "P5": 0.5,
+          "P6": 0.5,
+          "P7": 0.5,
+          "P8": 0.5,
+          "P9": 0.5
+        }
+      },
+      "range_rule (threshold from train)": {
+        "n": 369,
+        "accuracy": 0.6151761517615176,
+        "balanced_accuracy": 0.5289048200122026,
+        "incorrect_precision": 0.7058823529411765,
+        "incorrect_recall": 0.08053691275167785,
+        "incorrect_f1": 0.14457831325301204,
+        "confusion_matrix [[TN, FP], [FN, TP]]": [
+          [
+            215,
+            5
+          ],
+          [
+            137,
+            12
+          ]
+        ],
+        "balanced_accuracy_ci95_participant_bootstrap": [
+          0.48183543212006213,
+          0.5944337194337195
+        ],
+        "by_exercise": {
+          "shoulder_abduction": {
+            "n": 178,
+            "accuracy": 0.5449438202247191,
+            "balanced_accuracy": 0.5404040404040404,
+            "incorrect_precision": 0.7058823529411765,
+            "incorrect_recall": 0.13636363636363635,
+            "incorrect_f1": 0.22857142857142856,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                85,
+                5
+              ],
+              [
+                76,
+                12
+              ]
+            ]
+          },
+          "sit_to_stand": {
+            "n": 191,
+            "accuracy": 0.680628272251309,
+            "balanced_accuracy": 0.5,
+            "incorrect_precision": 0.0,
+            "incorrect_recall": 0.0,
+            "incorrect_f1": 0.0,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                130,
+                0
+              ],
+              [
+                61,
+                0
+              ]
+            ]
+          }
+        },
+        "by_participant_balanced_accuracy": {
+          "P1": 0.5,
+          "P2": 0.5,
+          "P3": 0.5,
+          "P4": 0.42592592592592593,
+          "P5": 0.5238095238095238,
+          "P6": 0.5,
+          "P7": 0.5,
+          "P8": 0.5333333333333333,
+          "P9": 0.7952586206896552
+        }
+      },
+      "rf_angle_only (trained on train set)": {
+        "n": 369,
+        "accuracy": 0.43089430894308944,
+        "balanced_accuracy": 0.49240390482001223,
+        "incorrect_precision": 0.39933993399339934,
+        "incorrect_recall": 0.8120805369127517,
+        "incorrect_f1": 0.5353982300884956,
+        "confusion_matrix [[TN, FP], [FN, TP]]": [
+          [
+            38,
+            182
+          ],
+          [
+            28,
+            121
+          ]
+        ],
+        "balanced_accuracy_ci95_participant_bootstrap": [
+          0.42146239954075776,
+          0.5612863426670958
+        ],
+        "by_exercise": {
+          "shoulder_abduction": {
+            "n": 178,
+            "accuracy": 0.43820224719101125,
+            "balanced_accuracy": 0.44242424242424244,
+            "incorrect_precision": 0.46153846153846156,
+            "incorrect_recall": 0.8181818181818182,
+            "incorrect_f1": 0.5901639344262295,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                6,
+                84
+              ],
+              [
+                16,
+                72
+              ]
+            ]
+          },
+          "sit_to_stand": {
+            "n": 191,
+            "accuracy": 0.42408376963350786,
+            "balanced_accuracy": 0.5247162673392182,
+            "incorrect_precision": 0.3333333333333333,
+            "incorrect_recall": 0.8032786885245902,
+            "incorrect_f1": 0.47115384615384615,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                32,
+                98
+              ],
+              [
+                12,
+                49
+              ]
+            ]
+          }
+        },
+        "by_participant_balanced_accuracy": {
+          "P1": 0.5973214285714286,
+          "P2": 0.3343108504398827,
+          "P3": 0.5,
+          "P4": 0.34259259259259256,
+          "P5": 0.43333333333333335,
+          "P6": 0.34375,
+          "P7": 0.675,
+          "P8": 0.5434782608695652,
+          "P9": 0.5894396551724138
+        }
+      },
+      "rf_angle_plus_posture (trained on train set)": {
+        "n": 369,
+        "accuracy": 0.5094850948509485,
+        "balanced_accuracy": 0.5788895668090299,
+        "incorrect_precision": 0.44871794871794873,
+        "incorrect_recall": 0.9395973154362416,
+        "incorrect_f1": 0.6073752711496746,
+        "confusion_matrix [[TN, FP], [FN, TP]]": [
+          [
+            48,
+            172
+          ],
+          [
+            9,
+            140
+          ]
+        ],
+        "balanced_accuracy_ci95_participant_bootstrap": [
+          0.5280165102340835,
+          0.6311601307189543
+        ],
+        "by_exercise": {
+          "shoulder_abduction": {
+            "n": 178,
+            "accuracy": 0.5168539325842697,
+            "balanced_accuracy": 0.5217171717171717,
+            "incorrect_precision": 0.5060240963855421,
+            "incorrect_recall": 0.9545454545454546,
+            "incorrect_f1": 0.6614173228346456,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                8,
+                82
+              ],
+              [
+                4,
+                84
+              ]
+            ]
+          },
+          "sit_to_stand": {
+            "n": 191,
+            "accuracy": 0.5026178010471204,
+            "balanced_accuracy": 0.6128625472887768,
+            "incorrect_precision": 0.3835616438356164,
+            "incorrect_recall": 0.9180327868852459,
+            "incorrect_f1": 0.5410628019323671,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                40,
+                90
+              ],
+              [
+                5,
+                56
+              ]
+            ]
+          }
+        },
+        "by_participant_balanced_accuracy": {
+          "P1": 0.5714285714285714,
+          "P2": 0.5161290322580645,
+          "P3": 0.525,
+          "P4": 0.5740740740740741,
+          "P5": 0.75,
+          "P6": 0.5041666666666667,
+          "P7": 0.55,
+          "P8": 0.6304347826086957,
+          "P9": 0.6724137931034483
+        }
+      },
+      "rf_angle_plus_posture_full (trained on train set)": {
+        "n": 369,
+        "accuracy": 0.5420054200542005,
+        "balanced_accuracy": 0.6137431360585723,
+        "incorrect_precision": 0.4681528662420382,
+        "incorrect_recall": 0.9865771812080537,
+        "incorrect_f1": 0.634989200863931,
+        "confusion_matrix [[TN, FP], [FN, TP]]": [
+          [
+            53,
+            167
+          ],
+          [
+            2,
+            147
+          ]
+        ],
+        "balanced_accuracy_ci95_participant_bootstrap": [
+          0.5611111111111111,
+          0.6734962856458184
+        ],
+        "by_exercise": {
+          "shoulder_abduction": {
+            "n": 178,
+            "accuracy": 0.5617977528089888,
+            "balanced_accuracy": 0.5666666666666667,
+            "incorrect_precision": 0.5301204819277109,
+            "incorrect_recall": 1.0,
+            "incorrect_f1": 0.6929133858267718,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                12,
+                78
+              ],
+              [
+                0,
+                88
+              ]
+            ]
+          },
+          "sit_to_stand": {
+            "n": 191,
+            "accuracy": 0.5235602094240838,
+            "balanced_accuracy": 0.6412988650693568,
+            "incorrect_precision": 0.39864864864864863,
+            "incorrect_recall": 0.9672131147540983,
+            "incorrect_f1": 0.5645933014354066,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                41,
+                89
+              ],
+              [
+                2,
+                59
+              ]
+            ]
+          }
+        },
+        "by_participant_balanced_accuracy": {
+          "P1": 0.5714285714285714,
+          "P2": 0.5,
+          "P3": 0.6,
+          "P4": 0.5740740740740741,
+          "P5": 0.8,
+          "P6": 0.5041666666666667,
+          "P7": 0.675,
+          "P8": 0.6521739130434783,
+          "P9": 0.7068965517241379
+        }
+      }
+    },
+    "in_domain_reference_loo_participant": {
+      "rf_angle_only": {
+        "n": 369,
+        "accuracy": 0.6449864498644986,
+        "balanced_accuracy": 0.6416259914582062,
+        "incorrect_precision": 0.5535714285714286,
+        "incorrect_recall": 0.6241610738255033,
+        "incorrect_f1": 0.5867507886435331,
+        "confusion_matrix [[TN, FP], [FN, TP]]": [
+          [
+            145,
+            75
+          ],
+          [
+            56,
+            93
+          ]
+        ]
+      },
+      "rf_angle_plus_posture": {
+        "n": 369,
+        "accuracy": 0.6476964769647696,
+        "balanced_accuracy": 0.6384838316046371,
+        "incorrect_precision": 0.5605095541401274,
+        "incorrect_recall": 0.5906040268456376,
+        "incorrect_f1": 0.5751633986928105,
+        "confusion_matrix [[TN, FP], [FN, TP]]": [
+          [
+            151,
+            69
+          ],
+          [
+            61,
+            88
+          ]
+        ]
+      },
+      "rf_angle_plus_posture_full": {
+        "n": 369,
+        "accuracy": 0.7235772357723578,
+        "balanced_accuracy": 0.7216137888956681,
+        "incorrect_precision": 0.6424242424242425,
+        "incorrect_recall": 0.7114093959731543,
+        "incorrect_f1": 0.6751592356687899,
+        "confusion_matrix [[TN, FP], [FN, TP]]": [
+          [
+            161,
+            59
+          ],
+          [
+            43,
+            106
+          ]
+        ]
+      }
+    }
+  }
+}
