@@ -34,7 +34,7 @@ def root(tmp_path):
         for i, (score, err) in enumerate([("1", ""), ("5", "ERR_LOW_ABDUCTION"), ("5", "ERR_ARM_FORWARD")]):
             rows.append([f"ex1_{p}", "1", "right", p, i + 1, i * 60, i * 60 + 59, 0, score, err, ""])
     rows.append(["ex1_MISSING", "1", "right", "D", 1, 0, 59, 0, "1", "", ""])  # no skeleton file
-    rows.append(["ex7_A", "7", "right", "A", 1, 0, 59, 0, "1", "", ""])  # exercise we do not support
+    rows.append(["ex4_A", "4", "right", "A", 1, 0, 59, 0, "1", "", ""])  # exercise we do not support
     with (tmp_path / "Segmentation.csv").open("w", newline="") as f:
         w = csv.writer(f, delimiter=";")
         w.writerow(HEADER)
@@ -51,6 +51,13 @@ def test_label_mapping_and_camera_choice():
     assert choose_camera(0, 90) == 3 and choose_camera(90, 90) == 1
 
 
+def test_camera_choice_avoids_cameras_that_cannot_see_the_joints():
+    # profile preferred (cam1 at orientation 90) but cam1 sees the arm in only 10% of frames: fall back to a visible one
+    assert choose_camera(90, 90, {1: 0.1, 2: 0.2, 3: 0.95}) == 3
+    assert choose_camera(90, 90, {1: 0.95, 2: 0.2, 3: 0.95}) == 1  # preferred view stays if it is visible enough
+    assert choose_camera(90, 90, {1: 0.1, 2: 0.4, 3: 0.3}) == 2  # nothing good: take the most visible
+
+
 def test_import_counts_labels_and_skips(root):
     rows, stats = import_rehab26(root)
     assert stats == {"skipped_exercise_not_supported": 1, "skipped_missing_file": 1, "imported": 9,
@@ -61,6 +68,29 @@ def test_import_counts_labels_and_skips(root):
     assert by[("A", "3")]["label"] == "posture_deviation"
     assert by[("A", "1")]["peak_progress"] > 0.9 and by[("A", "2")]["peak_progress"] < 0.5
     assert by[("A", "1")]["reliability"] == 1.0 and by[("A", "1")]["source"].startswith("rehab26")
+
+
+def test_aspect_correction_changes_angles_but_not_for_square(root):
+    sq, _ = import_rehab26(root, aspect=1.0)
+    same, _ = import_rehab26(root, aspect=1.0)
+    port, _ = import_rehab26(root, aspect=0.5625)
+    a = next(r for r in sq if r["recording_id"] == "ex1_A-r1")
+    assert a == next(r for r in same if r["recording_id"] == "ex1_A-r1")
+    b = next(r for r in port if r["recording_id"] == "ex1_A-r1")
+    assert b["rom_deg"] != pytest.approx(a["rom_deg"], abs=0.5)  # x squeezed -> angles differ
+
+
+def test_shoulder_extension_is_supported(root):
+    # exercise 7 rows are imported once its skeleton exists (view preference: profile)
+    (root / "mediapipe" / "ex7").mkdir(exist_ok=True)
+    # orientation 90 deg: cam1 views the person in profile (view angle -90), the preferred view for extension
+    np.save(root / "mediapipe" / "ex7" / "ex7_X_cam1_2d.npy", _skeleton([45, 45]))  # SYNTHETIC arm motion
+    with (root / "Segmentation.csv").open("a", newline="") as f:
+        csv.writer(f, delimiter=";").writerow(["ex7_X", "7", "right", "X", 1, 0, 59, 90, "5", "ERR_TORSO_FORWARD", ""])
+    rows, stats = import_rehab26(root)
+    r = next(r for r in rows if r["participant_id"] == "X")
+    assert r["exercise_id"] == "shoulder_extension" and r["label"] == "posture_deviation" and r["camera"] == 1
+    assert stats["skipped_exercise_not_supported"] == 1  # only the fixture's ex4 row; ex7 is now imported
 
 
 def test_low_visibility_frames_counted_as_missing(root):

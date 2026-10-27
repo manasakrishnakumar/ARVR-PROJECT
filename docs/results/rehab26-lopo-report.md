@@ -1,6 +1,6 @@
 # Leave-one-participant-out evaluation
 
-Data: rehab26-zenodo-23018128 (CC BY-NC 4.0) | 1084 repetitions from 5 participants (R26-P1, R26-P2, R26-P3, R26-P4, R26-P5) | labels: {'acceptable': 543, 'posture_deviation': 433, 'insufficient_range': 108}
+Data: rehab26-zenodo-23018128 (CC BY-NC 4.0) | 1665 repetitions from 5 participants (R26-P1, R26-P2, R26-P3, R26-P4, R26-P5) | labels: {'acceptable': 832, 'posture_deviation': 722, 'insufficient_range': 111}
 
 > Small sample of healthy volunteers performing deliberate errors, one camera view per repetition, single-camera pose estimates. Preliminary: not clinical or patient data. Tuned methods choose hyperparameters/thresholds using only the training participants of each fold (nested), never the held-out person. With 5 participants the confidence intervals are wide and differences between methods should be read cautiously.
 
@@ -8,79 +8,79 @@ Data: rehab26-zenodo-23018128 (CC BY-NC 4.0) | 1084 repetitions from 5 participa
 
 | Method | Accuracy | Macro-F1 | Macro-F1 95% CI (participant bootstrap) |
 |---|---|---|---|
-| Majority class | 0.501 | 0.222 | 0.221 to 0.224 |
-| Rule-based (illustrative thresholds) | 0.458 | 0.095 | 0.088 to 0.121 |
-| Range rule, threshold tuned on training participants | 0.523 | 0.370 | 0.347 to 0.396 |
-| Random forest, angle features | 0.478 | 0.432 | 0.344 to 0.526 |
-| Random forest, angle features, tuned | 0.438 | 0.419 | 0.302 to 0.498 |
-| Random forest, + posture features | 0.578 | 0.586 | 0.495 to 0.686 |
-| Random forest, + posture features, tuned | 0.568 | 0.565 | 0.490 to 0.652 |
+| Majority class | 0.500 | 0.222 | 0.222 to 0.223 |
+| Rule-based (illustrative thresholds) | 0.433 | 0.112 | 0.105 to 0.120 |
+| Range rule, threshold tuned on training participants | 0.512 | 0.368 | 0.306 to 0.416 |
+| Random forest, angle features | 0.476 | 0.389 | 0.321 to 0.447 |
+| Random forest, angle features, tuned | 0.340 | 0.310 | 0.246 to 0.356 |
+| Random forest, + posture features | 0.633 | 0.603 | 0.554 to 0.662 |
+| Random forest, + posture features, tuned | 0.640 | 0.627 | 0.574 to 0.679 |
 
 ## Binary view (acceptable vs any incorrect)
 
 | Method | Accuracy | Balanced acc. | Incorrect: precision | recall | F1 |
 |---|---|---|---|---|---|
-| Majority class | 0.501 | 0.500 | 0.000 | 0.000 | 0.000 |
-| Rule-based (illustrative thresholds) | 0.497 | 0.496 | 0.478 | 0.079 | 0.136 |
-| Range rule, threshold tuned on training participants | 0.547 | 0.546 | 0.798 | 0.124 | 0.214 |
-| Random forest, angle features | 0.526 | 0.526 | 0.519 | 0.667 | 0.584 |
-| Random forest, angle features, tuned | 0.542 | 0.542 | 0.526 | 0.826 | 0.643 |
-| Random forest, + posture features | 0.608 | 0.608 | 0.583 | 0.754 | 0.658 |
-| Random forest, + posture features, tuned | 0.627 | 0.628 | 0.597 | 0.778 | 0.676 |
+| Majority class | 0.500 | 0.500 | 0.000 | 0.000 | 0.000 |
+| Rule-based (illustrative thresholds) | 0.483 | 0.483 | 0.439 | 0.121 | 0.190 |
+| Range rule, threshold tuned on training participants | 0.525 | 0.525 | 0.750 | 0.076 | 0.137 |
+| Random forest, angle features | 0.523 | 0.523 | 0.517 | 0.707 | 0.597 |
+| Random forest, angle features, tuned | 0.500 | 0.499 | 0.500 | 0.851 | 0.630 |
+| Random forest, + posture features | 0.655 | 0.655 | 0.619 | 0.803 | 0.699 |
+| Random forest, + posture features, tuned | 0.676 | 0.676 | 0.645 | 0.786 | 0.708 |
 
 ## Per held-out participant (3-class accuracy)
 
 | Method | R26-P1 | R26-P2 | R26-P3 | R26-P4 | R26-P5 |
 |---|---|---|---|---|---|
-| Majority class | 0.509 | 0.500 | 0.495 | 0.500 | 0.500 |
-| Rule-based (illustrative thresholds) | 0.486 | 0.473 | 0.438 | 0.505 | 0.394 |
-| Range rule, threshold tuned on training participants | 0.528 | 0.541 | 0.500 | 0.538 | 0.509 |
-| Random forest, angle features | 0.481 | 0.374 | 0.338 | 0.619 | 0.575 |
-| Random forest, angle features, tuned | 0.449 | 0.275 | 0.362 | 0.529 | 0.575 |
-| Random forest, + posture features | 0.454 | 0.541 | 0.633 | 0.752 | 0.522 |
-| Random forest, + posture features, tuned | 0.519 | 0.468 | 0.648 | 0.686 | 0.531 |
+| Majority class | 0.502 | 0.496 | 0.498 | 0.500 | 0.503 |
+| Rule-based (illustrative thresholds) | 0.456 | 0.457 | 0.381 | 0.452 | 0.420 |
+| Range rule, threshold tuned on training participants | 0.483 | 0.540 | 0.492 | 0.530 | 0.515 |
+| Random forest, angle features | 0.441 | 0.493 | 0.450 | 0.552 | 0.447 |
+| Random forest, angle features, tuned | 0.369 | 0.203 | 0.378 | 0.315 | 0.435 |
+| Random forest, + posture features | 0.613 | 0.639 | 0.628 | 0.718 | 0.568 |
+| Random forest, + posture features, tuned | 0.595 | 0.615 | 0.695 | 0.724 | 0.574 |
 
 ## Feature importance (mean over folds): Random forest, angle features, tuned
 
-- rom_fraction: 0.357
-- peak_progress: 0.294
-- mean_speed_norm: 0.133
-- peak_velocity_norm: 0.100
-- duration_s: 0.092
-- extra_reversals: 0.021
-- reliability: 0.002
+- peak_progress: 0.276
+- rom_fraction: 0.231
+- duration_s: 0.176
+- mean_speed_norm: 0.163
+- peak_velocity_norm: 0.101
+- extra_reversals: 0.051
+- reliability: 0.001
 
 ## Feature importance (mean over folds): Random forest, + posture features, tuned
 
-- rom_fraction: 0.165
-- peak_progress: 0.106
-- torso_tilt_dev_mean: 0.083
-- rom3d_deg: 0.079
-- torso_tilt_dev_max: 0.075
-- heel_lift_dev_max: 0.065
-- lr_angle_asym_mean_deg: 0.064
+- rom3d_deg: 0.096
+- peak_progress: 0.092
+- torso_tilt_dev_mean: 0.082
+- lr_angle_asym_mean_deg: 0.075
+- rom_fraction: 0.074
+- torso_tilt_dev_max: 0.064
+- heel_lift_dev_max: 0.057
+- duration_s: 0.056
 - knee_valgus_dev_max: 0.054
-- knee_over_toe_dev_max: 0.047
-- mean_speed_norm: 0.043
+- peak3d_minus_2d_progress: 0.054
 
 Confusion matrix (Random forest, angle features, tuned; rows = true, cols = predicted; order: acceptable, insufficient_range, incomplete_repetition, too_fast, uncontrolled, insufficient_data, posture_deviation)
 ```
- 140  188    0    0    0    0  215
-  15   82    0    0    0    0   11
+ 123  380    0    0    0    0  329
+  12   80    0    0    0    0   19
    0    0    0    0    0    0    0
    0    0    0    0    0    0    0
    0    0    0    0    0    0    0
    0    0    0    0    0    0    0
-  79  101    0    0    0    0  253
+ 112  247    0    0    0    0  363
 ```
 
 Confusion matrix (Random forest, + posture features, tuned; rows = true, cols = predicted; order: acceptable, insufficient_range, incomplete_repetition, too_fast, uncontrolled, insufficient_data, posture_deviation)
 ```
- 259   62    0    0    0    0  222
-  16   88    0    0    0    0    4
+ 471   59    0    0    0    0  302
+  12   94    0    0    0    0    5
    0    0    0    0    0    0    0
    0    0    0    0    0    0    0
    0    0    0    0    0    0    0
    0    0    0    0    0    0    0
- 104   60    0    0    0    0  269
+ 166   55    0    0    0    0  501
 ```

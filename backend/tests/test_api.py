@@ -14,7 +14,7 @@ def test_health_and_disclaimer():
 
 def test_exercises_listed_and_unknown_404():
     with TestClient(app) as c:
-        assert len(c.get("/api/exercises").json()) == 5
+        assert len(c.get("/api/exercises").json()) == 6
         assert c.get("/api/exercises/knee_flexion").status_code == 200
         assert c.get("/api/exercises/nope").status_code == 404
 

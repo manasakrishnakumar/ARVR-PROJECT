@@ -1,0 +1,28 @@
+{
+  "hysteresis_deg": 6.0,
+  "min_rep_duration_s": 1.0,
+  "illustrative_only": true,
+  "phases": [
+    {"name": "rest", "description": "Arm hanging by your side"},
+    {"name": "moving_out", "description": "Move the arm backward"},
+    {"name": "target", "description": "Hold near the end of the range"},
+    {"name": "returning", "description": "Return the arm to your side"}
+  ],
+  "difficulty_levels": {
+    "1": {"target_reps": 5, "range_fraction": 0.6, "min_rep_duration_s": 1.5},
+    "2": {"target_reps": 8, "range_fraction": 0.75, "min_rep_duration_s": 1.2},
+    "3": {"target_reps": 10, "range_fraction": 0.9, "min_rep_duration_s": 1.0}
+  },
+  "id": "shoulder_extension",
+  "name": "Shoulder extension",
+  "target_joints": ["shoulder"],
+  "landmarks": ["LEFT_HIP", "LEFT_SHOULDER", "LEFT_ELBOW"],
+  "start_angle_deg": 10,
+  "target_angle_deg": 45,
+  "common_errors": ["Torso bent forward", "Shoulder elevated", "Torso rotation", "Arm bending at the elbow", "Arm drifting sideways"],
+  "feedback": {
+    "low_range": "Move your arm a little further back, within your comfort.",
+    "too_fast": "Slow down the movement.",
+    "good": "Good repetition."
+  }
+}

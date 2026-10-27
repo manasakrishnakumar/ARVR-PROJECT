@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { bodyAngles, jointAngle, MIN_CONFIDENCE, type JointAngles } from "../pose/angles";
+import { bodyAngles, isotropic, jointAngle, MIN_CONFIDENCE, type JointAngles } from "../pose/angles";
 import { DemoEstimator } from "../pose/demo";
 import { MediaPipeEstimator } from "../pose/mediapipe";
 import { LANDMARK_INDEX, SKELETON, type PoseEstimator, type PoseFrame } from "../pose/types";
@@ -132,9 +132,11 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
 
       // exercise angle -> backend (which owns counting and assessment)
       const ex = exRef.current;
+      const aspect = m === "camera" && video && video.videoHeight ? video.videoWidth / video.videoHeight : 1;
+      const lms = frame.landmarks ? isotropic(frame.landmarks, aspect) : null; // demo poses are already isotropic
       let exAngle: number | null = null;
-      if (frame.landmarks && ex) {
-        const [a, b, c] = ex.landmarks.map((n) => frame.landmarks![LANDMARK_INDEX[n]]);
+      if (lms && ex) {
+        const [a, b, c] = ex.landmarks.map((n) => lms[LANDMARK_INDEX[n]]);
         exAngle = jointAngle(a, b, c);
       }
       if (ts - lastSendRef.current >= SEND_INTERVAL_MS) {
@@ -152,7 +154,7 @@ export default function PoseLab({ exercises }: { exercises: Exercise[] }) {
       if (!frame.landmarks) { setStatus("No person detected. Step into view."); setAngles([]); return; }
       const conf = frame.landmarks.filter((l) => l.visibility >= MIN_CONFIDENCE).length;
       setStatus(`Tracking: ${conf}/33 landmarks above confidence ${MIN_CONFIDENCE}`);
-      setAngles(bodyAngles(frame.landmarks));
+      setAngles(bodyAngles(lms!));
     };
     tick();
   }, []);

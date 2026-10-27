@@ -17,6 +17,12 @@ export function jointAngle(a?: Landmark, b?: Landmark, c?: Landmark, minConf = M
   return (Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI;
 }
 
+/** Landmarks are normalised per axis (x by width, y by height). Multiply x by width/height so both axes share a
+ *  scale; otherwise angles are distorted on non-square video. Only for angle maths, not for drawing. */
+export function isotropic(lm: Landmark[], aspect: number): Landmark[] {
+  return aspect === 1 ? lm : lm.map((l) => ({ ...l, x: l.x * aspect }));
+}
+
 export interface JointAngles {
   label: string;
   angle: number | null;

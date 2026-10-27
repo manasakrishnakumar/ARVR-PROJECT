@@ -1,8 +1,8 @@
 """Importer for REHAB26-ViewAngles (Zenodo 10.5281/zenodo.23018128, CC BY-NC 4.0; cite the dataset authors).
 
 Healthy volunteers deliberately performing correct and incorrect repetitions, filmed by 3 phones, with
-MediaPipe Pose skeletons. Each repetition is turned into one dataset row using one camera (the most
-informative view for that exercise). Raw data is NOT redistributed here: keep it out of git.
+MediaPipe Pose skeletons. Each repetition is turned into one dataset row using one camera. Raw data is NOT
+redistributed here: keep it out of git.
 """
 import csv
 from collections import defaultdict
@@ -20,8 +20,11 @@ from app.repetition_detection.counter import Repetition
 FPS = 30.0
 SOURCE = "rehab26-zenodo-23018128 (CC BY-NC 4.0)"
 # dataset exercise id -> (our exercise id, body side measured, preferred |viewing angle| in degrees)
-EXERCISES = {"1": ("shoulder_abduction", "RIGHT", 0), "6": ("sit_to_stand", "LEFT", 90)}
+EXERCISES = {"1": ("shoulder_abduction", "RIGHT", 0), "6": ("sit_to_stand", "LEFT", 90),
+             "7": ("shoulder_extension", "RIGHT", 90)}
 RANGE_ERRORS = {"ERR_LOW_ABDUCTION", "ERR_SHALLOW_SQUAT"}  # the only errors our range feature can express
+# (shoulder extension has no range-type error code, so all its errors are posture deviations)
+VISIBLE_ENOUGH = 0.8  # a camera is usable if the exercise's joints are visible in at least this fraction of frames
 JOINT = {"LEFT_SHOULDER": 11, "RIGHT_SHOULDER": 12, "LEFT_ELBOW": 13, "RIGHT_ELBOW": 14, "LEFT_HIP": 23,
          "RIGHT_HIP": 24, "LEFT_KNEE": 25, "RIGHT_KNEE": 26, "LEFT_ANKLE": 27, "RIGHT_ANKLE": 28}
 
@@ -32,10 +35,24 @@ def map_label(correctness: str, error_code: str) -> str:
     return "insufficient_range" if error_code in RANGE_ERRORS else "posture_deviation"
 
 
-def choose_camera(orientation_deg: int, preferred_abs_view: int) -> int:
+def viewing_angles(orientation_deg: int) -> dict[int, int]:
     """Viewing angle of cam1/2/3 is -o, 45-o, 90-o (0 = frontal, +/-90 = profile)."""
-    views = {1: -orientation_deg, 2: 45 - orientation_deg, 3: 90 - orientation_deg}
-    return min(views, key=lambda c: abs(abs(views[c]) - preferred_abs_view))
+    return {1: -orientation_deg, 2: 45 - orientation_deg, 3: 90 - orientation_deg}
+
+
+def choose_camera(orientation_deg: int, preferred_abs_view: int, visibility: dict[int, float] | None = None) -> int:
+    """Camera whose view is closest to the preferred one among cameras that see the exercise's joints.
+
+    Uses only geometry and landmark visibility (never labels). If no camera reaches VISIBLE_ENOUGH, the
+    most visible one is used."""
+    views = viewing_angles(orientation_deg)
+    order = sorted(views, key=lambda c: abs(abs(views[c]) - preferred_abs_view))
+    if visibility is None:
+        return order[0]
+    usable = [c for c in order if c in visibility and visibility[c] >= VISIBLE_ENOUGH]
+    if usable:
+        return usable[0]
+    return max(visibility, key=visibility.get)  # type: ignore[arg-type]
 
 
 def _landmarks(frame: np.ndarray, names: list[str]) -> list[Landmark]:
@@ -46,39 +63,61 @@ def _landmarks(frame: np.ndarray, names: list[str]) -> list[Landmark]:
     return out
 
 
-def import_rehab26(root: Path, min_conf: float = 0.5) -> tuple[list[Row], dict]:
-    """root contains Segmentation.csv and mediapipe/<exN>/<video_id>_cam<k>_2d.npy"""
+def _visible_fraction(arr: np.ndarray, names: list[str], first: int, last: int, min_conf: float) -> float:
+    seg = arr[first:last + 1][:, [JOINT[n] for n in names], 3]
+    return float((seg >= min_conf).all(axis=1).mean()) if len(seg) else 0.0
+
+
+def import_rehab26(root: Path, min_conf: float = 0.5, aspect: float = 1.0) -> tuple[list[Row], dict]:
+    """root contains Segmentation.csv and mediapipe/<exN>/<video_id>_cam<k>_2d.npy
+
+    aspect = video width / height. 2D coordinates are normalised separately per axis, so x is multiplied by the
+    aspect ratio to make both axes the same scale (otherwise angles are distorted). The videos were not downloaded:
+    the portrait 9:16 value (0.5625) is inferred from comparing 2D and 3D skeleton scales (median estimate 0.53)."""
     with (root / "Segmentation.csv").open(encoding="utf-8", newline="") as f:
         seg = list(csv.DictReader(f, delimiter=";"))
-    stats = defaultdict(int)
-    jobs: dict[Path, list[dict]] = defaultdict(list)
+    stats: dict[str, int] = defaultdict(int)
+    groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for r in seg:
         if r["exercise_id"] not in EXERCISES:
             stats["skipped_exercise_not_supported"] += 1
             continue
-        _, _, view = EXERCISES[r["exercise_id"]]
-        cam = choose_camera(int(r["person_orientation"]), view)
-        r["_cam"] = cam
-        jobs[root / "mediapipe" / f"ex{r['exercise_id']}" / f"{r['video_id']}_cam{cam}_2d.npy"].append(r)
+        groups[(r["exercise_id"], r["video_id"])].append(r)
 
     rows: list[Row] = []
-    for path, reps in jobs.items():
-        if not path.exists():
+    for (exd, video), reps in groups.items():
+        folder = root / "mediapipe" / f"ex{exd}"
+        arrs: dict[int, np.ndarray] = {}
+        for cam in (1, 2, 3):
+            p = folder / f"{video}_cam{cam}_2d.npy"
+            if p.exists():
+                a = np.load(p, allow_pickle=False)  # never unpickle downloaded data
+                if aspect != 1.0:
+                    a = a.copy()
+                    a[:, :, 0] *= aspect
+                arrs[cam] = a
+        if not arrs:
             stats["skipped_missing_file"] += len(reps)
             continue
-        arr = np.load(path, allow_pickle=False)  # never unpickle downloaded data
-        path3d = path.with_name(path.name.replace("_2d.npy", "_3d.npy"))
-        arr3d = np.load(path3d, allow_pickle=False) if path3d.exists() else None
-        if arr3d is None:
-            stats["missing_3d_file"] += len(reps)
+        arrs3d: dict[int, np.ndarray | None] = {}
         for r in reps:
-            ex_id, side, _ = EXERCISES[r["exercise_id"]]
+            ex_id, side, view = EXERCISES[exd]
             ex = get_exercise(ex_id)
             if ex is None:
                 stats["skipped_unknown_exercise"] += 1
                 continue
             names = [n.replace("LEFT_", f"{side}_") for n in ex.landmarks]
-            first, last = int(r["first_frame"]), min(int(r["last_frame"]), len(arr) - 1)
+            first, last_req = int(r["first_frame"]), int(r["last_frame"])
+            vis = {c: _visible_fraction(a, names, first, min(last_req, len(a) - 1), min_conf) for c, a in arrs.items()}
+            cam = choose_camera(int(r["person_orientation"]), view, vis)
+            arr = arrs[cam]
+            if cam not in arrs3d:
+                p3 = folder / f"{video}_cam{cam}_3d.npy"
+                arrs3d[cam] = np.load(p3, allow_pickle=False) if p3.exists() else None
+            arr3d = arrs3d[cam]
+            if arr3d is None:
+                stats["missing_3d_file"] += 1
+            last = min(last_req, len(arr) - 1)
             sm, times, angles, missing = AngleSmoother(), [], [], 0
             for fr in range(first, last + 1):
                 a = joint_angle(*_landmarks(arr[fr], names), min_conf=min_conf)
@@ -100,7 +139,6 @@ def import_rehab26(root: Path, min_conf: float = 0.5) -> tuple[list[Row], dict]:
             post = posture_features(arr[first:last + 1], seg3d, ex, side)
             rows.append({"participant_id": r["person"], "recording_id": f"{r['video_id']}-r{r['repetition_number']}",
                          "exercise_id": ex_id, "label": label, "source": SOURCE, **rep_features(rep), **post,
-                         "camera": r["_cam"], "orientation_deg": r["person_orientation"],
-                         "error_code": r["error_description"]})
+                         "camera": cam, "orientation_deg": r["person_orientation"], "error_code": r["error_description"]})
             stats["imported"] += 1
     return rows, dict(stats)

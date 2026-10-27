@@ -36,11 +36,18 @@
 - [x] Posture features added (feature_extraction/posture.py, 14 features: torso tilt, shoulder elevation asymmetry, head tilt, elbow bend 2D/3D, left-right asymmetry, 3D range and depth cue, knee valgus, heel lift, knee-over-toe) + ablation + nested tuning (hyperparameters and a range-rule threshold chosen on training participants only; leakage test). 47 tests pass. Full table: docs/results/rehab26-lopo-report.md
 - [x] Results, 5 participants, LOPO: binary balanced accuracy RF angle-only 0.53 (tuned 0.54) -> RF + posture 0.61 (tuned 0.63); 3-class macro-F1 0.43 (0.42 tuned) -> 0.59 (0.57 tuned), CIs 0.30-0.50 vs 0.49-0.65 (wide, n=5). Tuned single range rule: macro-F1 0.37; untuned rule 0.10; majority 0.22. Per-participant: tuned posture model better than tuned angle-only for 4 of 5 held-out people (worse for R26-P5).
 - [x] Honest reading: posture features give a real but modest gain; correct-vs-incorrect is ~63% balanced accuracy, far from deployment quality. Nested hyperparameter tuning gave no clear benefit. Many acceptable reps are flagged posture_deviation (222 of 543). Feature importance is descriptive, not causal. No significance test is meaningful with n=5.
-- [ ] Still open: shoulder extension, second dataset (REHAB24-6) for external validation, repetition-count evaluation against Segmentation.csv, validation on own webcam recordings, class definitions reviewed by a rehabilitation professional
+## Phase 4c - Shoulder extension + external validation on REHAB24-6
+- [x] Shoulder extension exercise definition (illustrative targets) + importer support; camera selection now uses landmark visibility (no labels); video aspect (9:16, inferred) correction applied in the importer AND the live page (isotropic()); 56 tests pass
+- [x] REHAB26 LOPO re-run on all 1,665 reps (3 exercises, 5 people), aspect-corrected: rf_posture_tuned binary balanced acc 0.676, 3-class macro-F1 0.627 (CI 0.57-0.68); angle-only tuned 0.499 / 0.310; untuned rule 0.483 / 0.112. Uncorrected-aspect sensitivity: posture results essentially unchanged (0.685 / 0.602), so the conclusions do not hinge on the 9:16 assumption.
+- [x] REHAB24-6 downloaded (2d_joints, 693 MB, verified) and imported (369 reps, arm abduction + squat, 9 people with usable reps, mocap skeletons)
+- [x] EXTERNAL VALIDATION (train on REHAB26 only, nothing tuned on test, binary): rf angle+posture balanced acc 0.608 (95% CI 0.561-0.656), angle-only 0.532, tuned range rule 0.528, majority 0.500; in-domain reference on REHAB24-6 itself 0.689. By exercise: squat 0.664, arm abduction 0.522 (no transfer). Docs: docs/results/external-validation-rehab26-to-rehab24.md
+- [x] Honest reading: the posture-feature gain over angle-only replicates on an independent dataset, but it is small (about 0.61 balanced accuracy) and does not transfer for arm abduction. On the new data the model flags almost everything as incorrect (recall 0.98, precision 0.47 vs base rate 0.40): the decision threshold does not transfer, and the skeleton-source difference (mocap vs MediaPipe) confounds the drop. Not usable as a classifier yet.
+- [ ] Still open: repetition-count evaluation against Segmentation.csv, own webcam recordings (same pipeline, MediaPipe), run MediaPipe on REHAB24-6 videos for a like-for-like external test, probability calibration / threshold selection, class definitions reviewed by a rehabilitation professional
 - [ ] Raw data is git-ignored (licence); generated reps.csv/lopo_report.md live in datasets/external/rehab26/
 
 ## Later phases: not started
 Pose estimation, angles, repetition counter, assessment, ML, adaptation, dashboard, AR, 3D, evaluation.
+
 
 
 

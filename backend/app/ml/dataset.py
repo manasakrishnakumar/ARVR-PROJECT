@@ -12,7 +12,8 @@ from app.exercises.library import load_exercises
 from app.ml.features import POSTURE_FEATURES
 
 LABELS = ["acceptable", "insufficient_range", "incomplete_repetition", "too_fast", "uncontrolled", "insufficient_data",
-          "posture_deviation"]  # posture_deviation: errors a single joint angle cannot express (real-data labels only)
+          "posture_deviation",  # errors a single joint angle cannot express (real-data labels only)
+          "incorrect_unspecified"]  # datasets that only say 'incorrect' (e.g. REHAB24-6): binary evaluation only
 META_COLUMNS = ["participant_id", "recording_id", "exercise_id", "label", "source"]
 RAW_FEATURES = ["rom_deg", "duration_s", "peak_velocity_deg_s", "mean_speed_deg_s", "extra_reversals",
                 "peak_progress", "reliability"]
