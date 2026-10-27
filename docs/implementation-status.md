@@ -19,7 +19,17 @@
 - [ ] Real webcam path and non-elbow exercises NOT yet tested live (demo only animates elbow flexion); thresholds illustrative; no real human recordings yet
 - [ ] Sessions are not persisted yet (Phase 5/6); difficulty is manual until the adaptive controller exists
 
+## Phase 4 - Machine learning (pipeline done; SYNTHETIC data only)
+- [x] Dataset schema + validation + CSV I/O, participant-level split (leakage test), synthetic generator (labelled synthetic)
+- [x] Random Forest training, versioned model + metadata, inference with explicit 'uncertain' state, GET /api/models/status
+- [x] Evaluation vs majority-class and rule-based baselines: accuracy, per-class P/R/F1, confusion matrix, participant-bootstrap CI; report at artifacts/reports/<version>/report.md
+- [x] 36 backend tests pass; run with scripts\train_model.ps1
+- [ ] No real data yet: results on synthetic data show the pipeline works, NOT that ML beats rules on real people (generator mirrors rule thresholds). ML is preliminary.
+- [ ] ML not yet used in the live session / evaluate endpoint; Kaggle dataset not chosen (needs user account + label-mapping check)
+- [ ] LSTM/GRU, angle MAE/RMSE, repetition-count evaluation: not started
+
 ## Later phases: not started
 Pose estimation, angles, repetition counter, assessment, ML, adaptation, dashboard, AR, 3D, evaluation.
+
 
 

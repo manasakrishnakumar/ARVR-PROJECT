@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.config import DISCLAIMER, settings
 from app.database.db import ExerciseSession, get_db
 from app.exercises.library import Exercise, get_exercise, load_exercises
+from app.ml.inference import model_status
 from app.services.analysis import RepResult, StreamAnalyzer, analyze_series
 
 router = APIRouter(prefix="/api")
@@ -129,6 +130,11 @@ def evaluate(body: EvaluateRequest) -> EvaluateResponse:
     attempts = [_rep_out(r) for r in res.attempts]
     return EvaluateResponse(exercise_id=ex.id, difficulty=body.difficulty, counted_reps=res.counted_reps,
                             attempts=attempts, final_phase=res.final_phase)
+
+
+@router.get("/models/status")
+def models_status() -> dict:
+    return model_status(settings.artifacts_dir)
 
 
 @router.get("/health", response_model=Health)
