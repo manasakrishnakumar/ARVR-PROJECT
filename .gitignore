@@ -9,3 +9,4 @@ artifacts/*
 !artifacts/.gitkeep
 frontend/public/wasm/
 frontend/public/models/*.task
+datasets/external/

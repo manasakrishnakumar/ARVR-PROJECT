@@ -6,23 +6,23 @@ from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_f
 
 from app.exercise_assessment.rules import assess_rep
 from app.exercises.library import load_exercises
-from app.ml.dataset import LABELS, Row
+from app.ml.dataset import LABELS, RAW_FEATURES, Row
 
 
 def rule_based_predict(rows: list[Row], difficulty: int = 1) -> list[str]:
     ex = load_exercises()
-    return [assess_rep(ex[str(r["exercise_id"])], difficulty, {k: float(v) for k, v in r.items()
-                                                                 if k not in ("participant_id", "recording_id",
-                                                                              "exercise_id", "label", "source")}).label
+    return [assess_rep(ex[str(r["exercise_id"])], difficulty, {k: float(r[k]) for k in RAW_FEATURES}).label
             for r in rows]
 
 
 def metrics(y_true: list[str], y_pred: list[str]) -> dict:
+    present = set(y_true) | set(y_pred)
     p, r, f1, support = precision_recall_fscore_support(y_true, y_pred, labels=LABELS, zero_division=0)
     return {
         "n": len(y_true),
         "accuracy": float(accuracy_score(y_true, y_pred)),
-        "macro_f1": float(f1.mean()),
+        # macro-F1 over classes that occur in the truth or the predictions (absent classes would only add zeros)
+        "macro_f1": float(f1[[l in present for l in LABELS]].mean()),
         "per_class": {l: {"precision": float(p[i]), "recall": float(r[i]), "f1": float(f1[i]), "support": int(support[i])}
                       for i, l in enumerate(LABELS)},
         "confusion_matrix": {"labels": LABELS, "matrix": confusion_matrix(y_true, y_pred, labels=LABELS).tolist()},

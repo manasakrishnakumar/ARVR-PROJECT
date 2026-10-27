@@ -10,7 +10,8 @@ from pathlib import Path
 
 from app.exercises.library import load_exercises
 
-LABELS = ["acceptable", "insufficient_range", "incomplete_repetition", "too_fast", "uncontrolled", "insufficient_data"]
+LABELS = ["acceptable", "insufficient_range", "incomplete_repetition", "too_fast", "uncontrolled", "insufficient_data",
+          "posture_deviation"]  # posture_deviation: errors a single joint angle cannot express (real-data labels only)
 META_COLUMNS = ["participant_id", "recording_id", "exercise_id", "label", "source"]
 RAW_FEATURES = ["rom_deg", "duration_s", "peak_velocity_deg_s", "mean_speed_deg_s", "extra_reversals",
                 "peak_progress", "reliability"]
@@ -50,7 +51,8 @@ def validate_rows(rows: list[Row]) -> None:
 def write_csv(rows: list[Row], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS)
+        extra = [k for k in rows[0] if k not in COLUMNS] if rows else []
+        w = csv.DictWriter(f, fieldnames=COLUMNS + extra)
         w.writeheader()
         w.writerows(rows)
 

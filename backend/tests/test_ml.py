@@ -24,7 +24,7 @@ def rows():
 def test_synthetic_dataset_is_labelled_synthetic_and_covers_all_classes(rows):
     ds.validate_rows(rows)
     assert {r["source"] for r in rows} == {"synthetic"}
-    assert {r["label"] for r in rows} == set(ds.LABELS)
+    assert {r["label"] for r in rows} == set(ds.LABELS) - {"posture_deviation"}
 
 
 def test_generation_is_deterministic():
@@ -100,7 +100,7 @@ def test_train_evaluate_save_and_infer(rows, tmp_path):
 def test_low_confidence_returns_uncertain(rows, tmp_path):
     train_and_evaluate(rows, tmp_path, n_boot=5)
     clf = MLAssessor.load(tmp_path)
-    clf.clf.predict_proba = lambda X: [[1 / 6] * 6]  # flat distribution
+    clf.clf.predict_proba = lambda X: [[1 / 7] * 7]  # flat distribution
     clf.clf.classes_ = ds.LABELS
     pred = clf.predict({"rom_deg": 1, "duration_s": 1, "peak_velocity_deg_s": 1, "mean_speed_deg_s": 1,
                         "extra_reversals": 0, "peak_progress": 0.5, "reliability": 1}, get_exercise("knee_flexion"))
