@@ -1,0 +1,61 @@
+{
+  "hysteresis_deg": 8.0,
+  "min_rep_duration_s": 1.0,
+  "illustrative_only": true,
+  "phases": [
+    {
+      "name": "rest",
+      "description": "Start position"
+    },
+    {
+      "name": "moving_out",
+      "description": "Move toward target"
+    },
+    {
+      "name": "target",
+      "description": "Hold near target"
+    },
+    {
+      "name": "returning",
+      "description": "Return to start"
+    }
+  ],
+  "difficulty_levels": {
+    "1": {
+      "target_reps": 5,
+      "range_fraction": 0.6,
+      "min_rep_duration_s": 1.5
+    },
+    "2": {
+      "target_reps": 8,
+      "range_fraction": 0.75,
+      "min_rep_duration_s": 1.2
+    },
+    "3": {
+      "target_reps": 10,
+      "range_fraction": 0.9,
+      "min_rep_duration_s": 1.0
+    }
+  },
+  "id": "knee_flexion",
+  "name": "Knee flexion",
+  "target_joints": [
+    "knee"
+  ],
+  "landmarks": [
+    "LEFT_HIP",
+    "LEFT_KNEE",
+    "LEFT_ANKLE"
+  ],
+  "start_angle_deg": 170,
+  "target_angle_deg": 90,
+  "common_errors": [
+    "Incomplete bend",
+    "Moving too fast"
+  ],
+  "feedback": {
+    "low_range": "Bend your knee a little further.",
+    "too_fast": "Slow down the movement.",
+    "good": "Good repetition."
+  }
+}

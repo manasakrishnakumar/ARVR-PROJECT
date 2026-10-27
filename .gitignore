@@ -1,0 +1,11 @@
+backend/.venv/
+backend/*.db
+__pycache__/
+.pytest_cache/
+node_modules/
+dist/
+.env
+artifacts/*
+!artifacts/.gitkeep
+frontend/public/wasm/
+frontend/public/models/*.task

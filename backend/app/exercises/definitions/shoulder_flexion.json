@@ -1,0 +1,61 @@
+{
+  "hysteresis_deg": 8.0,
+  "min_rep_duration_s": 1.0,
+  "illustrative_only": true,
+  "phases": [
+    {
+      "name": "rest",
+      "description": "Start position"
+    },
+    {
+      "name": "moving_out",
+      "description": "Move toward target"
+    },
+    {
+      "name": "target",
+      "description": "Hold near target"
+    },
+    {
+      "name": "returning",
+      "description": "Return to start"
+    }
+  ],
+  "difficulty_levels": {
+    "1": {
+      "target_reps": 5,
+      "range_fraction": 0.6,
+      "min_rep_duration_s": 1.5
+    },
+    "2": {
+      "target_reps": 8,
+      "range_fraction": 0.75,
+      "min_rep_duration_s": 1.2
+    },
+    "3": {
+      "target_reps": 10,
+      "range_fraction": 0.9,
+      "min_rep_duration_s": 1.0
+    }
+  },
+  "id": "shoulder_flexion",
+  "name": "Shoulder flexion",
+  "target_joints": [
+    "shoulder"
+  ],
+  "landmarks": [
+    "LEFT_HIP",
+    "LEFT_SHOULDER",
+    "LEFT_ELBOW"
+  ],
+  "start_angle_deg": 20,
+  "target_angle_deg": 100,
+  "common_errors": [
+    "Insufficient arm raise",
+    "Moving too fast"
+  ],
+  "feedback": {
+    "low_range": "Raise your arm slightly higher.",
+    "too_fast": "Slow down the movement.",
+    "good": "Good repetition."
+  }
+}

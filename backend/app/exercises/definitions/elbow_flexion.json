@@ -1,0 +1,62 @@
+{
+  "hysteresis_deg": 8.0,
+  "min_rep_duration_s": 1.0,
+  "illustrative_only": true,
+  "phases": [
+    {
+      "name": "rest",
+      "description": "Start position"
+    },
+    {
+      "name": "moving_out",
+      "description": "Move toward target"
+    },
+    {
+      "name": "target",
+      "description": "Hold near target"
+    },
+    {
+      "name": "returning",
+      "description": "Return to start"
+    }
+  ],
+  "difficulty_levels": {
+    "1": {
+      "target_reps": 5,
+      "range_fraction": 0.6,
+      "min_rep_duration_s": 1.5
+    },
+    "2": {
+      "target_reps": 8,
+      "range_fraction": 0.75,
+      "min_rep_duration_s": 1.2
+    },
+    "3": {
+      "target_reps": 10,
+      "range_fraction": 0.9,
+      "min_rep_duration_s": 1.0
+    }
+  },
+  "id": "elbow_flexion",
+  "name": "Elbow flexion",
+  "target_joints": [
+    "elbow"
+  ],
+  "landmarks": [
+    "LEFT_SHOULDER",
+    "LEFT_ELBOW",
+    "LEFT_WRIST"
+  ],
+  "start_angle_deg": 160,
+  "target_angle_deg": 50,
+  "common_errors": [
+    "Incomplete bend",
+    "Moving too fast",
+    "Shoulder compensation"
+  ],
+  "feedback": {
+    "low_range": "Bend your elbow a little further.",
+    "too_fast": "Keep your movement controlled.",
+    "good": "Good repetition."
+  }
+}
