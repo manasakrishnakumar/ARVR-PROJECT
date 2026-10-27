@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.config import DISCLAIMER, settings
 from app.database.db import ExerciseSession, get_db
 from app.exercises.library import Exercise, get_exercise, load_exercises
+from app.services.analysis import analyze_series
 
 router = APIRouter(prefix="/api")
 
@@ -30,6 +31,62 @@ class SessionOut(BaseModel):
     is_demo: bool
     difficulty: int
     model_config = {"from_attributes": True}
+
+
+class AngleSample(BaseModel):
+    t: float = Field(ge=0, description="seconds from start of series")
+    angle: float | None = Field(default=None, ge=0, le=360, description="null = landmark missing/unreliable")
+
+
+class EvaluateRequest(BaseModel):
+    exercise_id: str
+    difficulty: int = Field(default=1, ge=1, le=5)
+    samples: list[AngleSample] = Field(min_length=2, max_length=20000)
+
+
+class RepOut(BaseModel):
+    index: int
+    t_start: float
+    t_end: float
+    counted: bool
+    label: str
+    score: float | None
+    reliable: bool
+    explanation: str
+    feedback: str
+    features: dict[str, float]
+
+
+class EvaluateResponse(BaseModel):
+    exercise_id: str
+    difficulty: int
+    counted_reps: int
+    attempts: list[RepOut]
+    final_phase: str
+    method: str = "rule_based"
+    disclaimer: str = DISCLAIMER
+
+
+@router.post("/assessment/evaluate", response_model=EvaluateResponse)
+def evaluate(body: EvaluateRequest) -> EvaluateResponse:
+    ex = get_exercise(body.exercise_id)
+    if ex is None:
+        raise HTTPException(404, f"Unknown exercise '{body.exercise_id}'")
+    times = [s.t for s in body.samples]
+    if any(b < a for a, b in zip(times, times[1:])):
+        raise HTTPException(422, "samples must be ordered by time")
+    try:
+        res = analyze_series(ex, body.difficulty, [(s.t, s.angle) for s in body.samples])
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from e
+    attempts = [
+        RepOut(index=r.repetition.index, t_start=r.repetition.t_start, t_end=r.repetition.t_end, counted=r.counted,
+               label=r.assessment.label, score=r.assessment.score, reliable=r.assessment.reliable,
+               explanation=r.assessment.explanation, feedback=r.assessment.feedback, features=r.assessment.features)
+        for r in res.attempts
+    ]
+    return EvaluateResponse(exercise_id=ex.id, difficulty=body.difficulty, counted_reps=res.counted_reps,
+                            attempts=attempts, final_phase=res.final_phase)
 
 
 @router.get("/health", response_model=Health)

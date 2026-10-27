@@ -1,4 +1,4 @@
-# Implementation status
+﻿# Implementation status
 
 ## Phase 1 — Environment and architecture
 - [x] Environment inspected: Python 3.10.11, Git 2.55, Docker present; Node.js 24.22.1 / npm 11.19.1 installed via winget during this session; Unity not found.
@@ -10,5 +10,14 @@
 - [ ] Frontend (Vite+React+TS) — blocked: Node.js not installed
 - [ ] docs/architecture.md, installation.md (README covers backend only so far)
 
+## Phase 3 - Exercise analysis (done, synthetic-data tests only)
+- [x] Repetition counter state machine (rest/moving_out/target/returning, hysteresis, min duration, gap abort)
+- [x] Per-repetition features, rule-based assessment (acceptable, insufficient_range, incomplete_repetition, too_fast, uncontrolled, insufficient_data)
+- [x] POST /api/assessment/evaluate (angle series in, repetitions and assessments out)
+- [x] 22 backend tests pass; fixed AngleSmoother permanently rejecting persistent jumps
+- [ ] NOT validated on real human recordings; thresholds are illustrative; counter not yet wired into the live Pose lab page
+- [ ] 3+ exercises 'observable feedback' in the UI pending frontend integration
+
 ## Later phases: not started
 Pose estimation, angles, repetition counter, assessment, ML, adaptation, dashboard, AR, 3D, evaluation.
+

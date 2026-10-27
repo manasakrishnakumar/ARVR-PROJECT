@@ -48,8 +48,10 @@ def joint_angle(a: Landmark | None, b: Landmark | None, c: Landmark | None,
 class AngleSmoother:
     """Exponential moving average that skips missing values and rejects spikes."""
 
-    def __init__(self, alpha: float = 0.4, max_jump_deg: float = 60.0):
-        self.alpha, self.max_jump, self.value = alpha, max_jump_deg, None
+    def __init__(self, alpha: float = 0.4, max_jump_deg: float = 60.0, max_rejects: int = 3):
+        self.alpha, self.max_jump, self.max_rejects = alpha, max_jump_deg, max_rejects
+        self.value: float | None = None
+        self._rejects = 0
 
     def update(self, angle: float | None) -> float | None:
         if angle is None:
@@ -58,4 +60,10 @@ class AngleSmoother:
             self.value = angle
         elif abs(angle - self.value) <= self.max_jump:
             self.value = self.alpha * angle + (1 - self.alpha) * self.value
+            self._rejects = 0
+        else:
+            # a one-off spike is ignored; a persistent jump is real movement, so accept it
+            self._rejects += 1
+            if self._rejects >= self.max_rejects:
+                self.value, self._rejects = angle, 0
         return self.value
