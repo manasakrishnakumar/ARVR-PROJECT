@@ -1,0 +1,57 @@
+{
+  "version": "rf-20261027-180833-185cb8d1",
+  "created_utc": "2026-10-27T18:08:33.315605+00:00",
+  "algorithm": "RandomForestClassifier",
+  "sklearn_version": "1.7.2",
+  "features": [
+    "peak_progress",
+    "rom_fraction",
+    "duration_s",
+    "peak_velocity_norm",
+    "mean_speed_norm",
+    "extra_reversals",
+    "reliability"
+  ],
+  "classes": [
+    "acceptable",
+    "incomplete_repetition",
+    "insufficient_data",
+    "insufficient_range",
+    "too_fast",
+    "uncontrolled"
+  ],
+  "all_labels": [
+    "acceptable",
+    "insufficient_range",
+    "incomplete_repetition",
+    "too_fast",
+    "uncontrolled",
+    "insufficient_data",
+    "posture_deviation",
+    "incorrect_unspecified"
+  ],
+  "data_sources": [
+    "synthetic"
+  ],
+  "synthetic_only": true,
+  "data_sha256": "185cb8d15656b758d299bf6c7f2f121c25bf48550afc8df395762a89278ef285",
+  "n_rows": 720,
+  "seed": 0,
+  "split": "by participant_id",
+  "evaluation_sizes": {
+    "train_rows": 504,
+    "test_rows": 216,
+    "train_participants": 21,
+    "test_participants": 9
+  },
+  "feature_importance": {
+    "peak_progress": 0.18986467210342375,
+    "rom_fraction": 0.18513411535419125,
+    "duration_s": 0.1446651612319314,
+    "peak_velocity_norm": 0.11307919254747865,
+    "mean_speed_norm": 0.14294680426162198,
+    "extra_reversals": 0.0683719805942351,
+    "reliability": 0.15593807390711786
+  },
+  "note": "Research prototype classifier; not validated on real human movement unless data_sources says otherwise."
+}

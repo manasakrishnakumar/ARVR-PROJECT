@@ -7,6 +7,9 @@ dist/
 .env
 artifacts/*
 !artifacts/.gitkeep
+!artifacts/models/
+artifacts/models/*
+!artifacts/models/synthetic-demo/
 frontend/public/wasm/
 frontend/public/models/*.task
 datasets/external/

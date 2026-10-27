@@ -107,6 +107,21 @@ def test_low_confidence_returns_uncertain(rows, tmp_path):
     assert pred.uncertain and pred.label == "uncertain"
 
 
+def test_committed_demo_model_is_loadable_and_clearly_synthetic():
+    import json
+    from pathlib import Path
+
+    root = Path(settings.artifacts_dir)
+    meta = json.loads((root / "models" / "synthetic-demo" / "metadata.json").read_text(encoding="utf-8"))
+    assert meta["synthetic_only"] is True and meta["data_sources"] == ["synthetic"]
+    assert "SYNTHETIC" in (root / "models" / "synthetic-demo" / "README.md").read_text(encoding="utf-8")
+    clf = MLAssessor.load(root, version="synthetic-demo")
+    good = {"rom_deg": 95, "duration_s": 3.0, "peak_velocity_deg_s": 60, "mean_speed_deg_s": 35,
+            "extra_reversals": 0, "peak_progress": 0.95, "reliability": 1.0}
+    pred = clf.predict(good, get_exercise("elbow_flexion"))
+    assert abs(sum(pred.probabilities.values()) - 1) < 1e-6 and pred.label in set(ds.LABELS) | {"uncertain"}
+
+
 def test_missing_model(tmp_path):
     with pytest.raises(ModelNotAvailable):
         MLAssessor.load(tmp_path)
