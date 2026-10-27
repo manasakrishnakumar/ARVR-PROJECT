@@ -31,7 +31,18 @@ def main() -> None:
     r24 = sub.add_parser("import-rehab24", help="convert REHAB24-6 (CC BY-NC, mocap skeletons) into a repetition CSV")
     r24.add_argument("--root", type=Path, default=settings.artifacts_dir.parent / "datasets" / "external" / "rehab24")
     r24.add_argument("--out", type=Path, default=None)
+    fv = sub.add_parser("fetch-rehab24-videos", help="download only the REHAB24-6 videos needed (HTTP range requests)")
+    fv.add_argument("--root", type=Path, default=settings.artifacts_dir.parent / "datasets" / "external" / "rehab24")
+    fv.add_argument("--workers", type=int, default=4)
+    xv = sub.add_parser("extract-rehab24-videos", help="run MediaPipe Pose on the needed REHAB24-6 repetition frames")
+    xv.add_argument("--root", type=Path, default=settings.artifacts_dir.parent / "datasets" / "external" / "rehab24")
+    xv.add_argument("--model", type=Path, default=settings.artifacts_dir.parent / "frontend" / "public" / "models" / "pose_landmarker_full.task")
+    xv.add_argument("--limit", type=int, default=0, help="process only the first N recordings (0 = all)")
+    iv = sub.add_parser("import-rehab24-video", help="convert MediaPipe output on the REHAB24-6 videos into a repetition CSV")
+    iv.add_argument("--root", type=Path, default=settings.artifacts_dir.parent / "datasets" / "external" / "rehab24")
+    iv.add_argument("--out", type=Path, default=None)
     ex = sub.add_parser("external", help="train on one repetition CSV, test on another (binary, nothing tuned on test)")
+    ex.add_argument("--full-features", action="store_true", help="also evaluate the complete feature set (needs MediaPipe on both sides)")
     ex.add_argument("--train", type=Path, required=True)
     ex.add_argument("--test", type=Path, required=True)
     ex.add_argument("--report", type=Path, required=True)
@@ -52,9 +63,68 @@ def main() -> None:
         out = a.out or a.root / "reps.csv"
         write_csv(rows, out)
         print(f"Wrote {len(rows)} repetitions to {out}\n{json.dumps(stats)}")
+    elif a.cmd == "fetch-rehab24-videos":
+        from concurrent.futures import ThreadPoolExecutor
+
+        from app.ml.rehab24 import ZENODO_VIDEOS_URL, needed_recordings, video_entry_name
+        from app.ml.remote_zip import fetch_entry, list_entries
+
+        entries = list_entries(ZENODO_VIDEOS_URL)
+        jobs = []
+        for (exd, video, cam) in sorted(needed_recordings(a.root)):
+            name = video_entry_name(entries, exd, video, cam)
+            if name:
+                jobs.append((name, a.root / "videos" / name))
+        print(f"{len(jobs)} videos to fetch")
+
+        def one(job):
+            name, dest = job
+            n = fetch_entry(ZENODO_VIDEOS_URL, name, dest)
+            print(f"  {name}: {'already present' if n == 0 else f'{n / 1e6:.0f} MB'}", flush=True)
+
+        with ThreadPoolExecutor(a.workers) as pool:
+            list(pool.map(one, jobs))
+        print("done")
+    elif a.cmd == "extract-rehab24-videos":
+        import time
+
+        import numpy as np
+
+        from app.ml.rehab24 import needed_recordings, video_entry_name
+        from app.ml.video_pose import MediaPipeDetector, extract_ranges
+
+        need = sorted(needed_recordings(a.root).items())
+        if a.limit:
+            need = need[:a.limit]
+        out_dir = a.root / "mediapipe"
+        for k, ((exd, video, cam), ranges) in enumerate(need, 1):
+            base = out_dir / f"Ex{exd}" / f"{video}-c{cam}"
+            if base.with_name(base.name + "_meta.json").exists():
+                print(f"[{k}/{len(need)}] {video} cam{cam}: already extracted", flush=True)
+                continue
+            videos = list((a.root / "videos" / f"Ex{exd}").glob(f"{video}-Camera{cam}-30fps*.mp4"))
+            if not videos:
+                print(f"[{k}/{len(need)}] {video} cam{cam}: video missing, skipped", flush=True)
+                continue
+            t0 = time.time()
+            a2d, a3d, meta = extract_ranges(videos[0], ranges, lambda: MediaPipeDetector(a.model))
+            base.parent.mkdir(parents=True, exist_ok=True)
+            np.save(base.with_name(base.name + "_2d.npy"), a2d)
+            np.save(base.with_name(base.name + "_3d.npy"), a3d)
+            meta.update({"video_file": videos[0].name, "model": a.model.name, "seconds": round(time.time() - t0, 1)})
+            base.with_name(base.name + "_meta.json").write_text(json.dumps(meta), encoding="utf-8")
+            print(f"[{k}/{len(need)}] {video} cam{cam}: {meta['detected']}/{meta['processed']} frames with a person, "
+                  f"{meta['width']}x{meta['height']}, {meta['seconds']}s", flush=True)
+    elif a.cmd == "import-rehab24-video":
+        from app.ml.rehab24 import import_rehab24_video
+
+        rows, stats = import_rehab24_video(a.root)
+        out = a.out or a.root / "reps_video.csv"
+        write_csv(rows, out)
+        print(f"Wrote {len(rows)} repetitions to {out}\n{json.dumps(stats)}")
     elif a.cmd == "external":
         tr, te = read_csv(a.train), read_csv(a.test)
-        ev = external_validation(tr, te, seed=a.seed)
+        ev = external_validation(tr, te, seed=a.seed, full_features=a.full_features)
         a.report.write_text(render_external_report(ev, str(tr[0]["source"]), str(te[0]["source"])), encoding="utf-8")
         print(f"Report: {a.report}")
         for n, m in ev["methods"].items():

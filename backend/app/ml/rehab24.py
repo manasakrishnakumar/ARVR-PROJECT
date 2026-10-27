@@ -21,6 +21,8 @@ from app.repetition_detection.counter import Repetition
 
 FPS = 30.0
 SOURCE = "rehab24-6-zenodo-13305826 (CC BY-NC 4.0)"
+SOURCE_VIDEO = "rehab24-6-videos-mediapipe-full (CC BY-NC 4.0)"
+ZENODO_VIDEOS_URL = "https://zenodo.org/records/13305826/files/videos.zip?download=1"
 # dataset exercise id -> (our exercise id, side, preferred |viewing angle|, folder)
 EXERCISES = {"1": ("shoulder_abduction", "RIGHT", 0), "6": ("sit_to_stand", "LEFT", 90)}
 VIEW_DEG = {"front": 0, "half-profile": 45, "profile": 90}
@@ -43,6 +45,70 @@ def choose_camera(cam17_orientation: str, preferred_abs_view: int) -> int:
     v17 = VIEW_DEG[cam17_orientation]
     v18 = VIEW_DEG[CAM18_VIEW[cam17_orientation]]
     return 17 if abs(v17 - preferred_abs_view) <= abs(v18 - preferred_abs_view) else 18
+
+
+def needed_recordings(root: Path) -> dict[tuple[str, str, int], list[tuple[int, int]]]:
+    """(exercise id, video id, camera) -> repetition frame ranges, for the repetitions the importer would use."""
+    with (root / "Segmentation.csv").open(encoding="utf-8", newline="") as f:
+        seg = list(csv.DictReader(f, delimiter=";"))
+    need: dict[tuple[str, str, int], list[tuple[int, int]]] = defaultdict(list)
+    for r in seg:
+        if r["exercise_id"] in EXERCISES and r["mocap_erroneous"] != "1":
+            cam = choose_camera(r["cam17_orientation"], EXERCISES[r["exercise_id"]][2])
+            need[(r["exercise_id"], r["video_id"], cam)].append((int(r["first_frame"]), int(r["last_frame"])))
+    return dict(need)
+
+
+def video_entry_name(entries: dict[str, int], exd: str, video: str, cam: int) -> str | None:
+    """Zip entry for a recording (camera 18 files carry a '-transposed' suffix)."""
+    prefix = f"Ex{exd}/{video}-Camera{cam}-30fps"
+    return next((n for n in entries if n.startswith(prefix) and n.endswith(".mp4")), None)
+
+
+def import_rehab24_video(root: Path, min_conf: float = 0.5) -> tuple[list[Row], dict]:
+    """Rows from MediaPipe Pose run on the REHAB24-6 videos (see `extract-rehab24-videos`): same estimator family and
+    feature code as REHAB26, including 3D and ear/heel based features. Same 369 repetitions as the mocap import."""
+    import json
+
+    from app.ml.rehab26 import build_rep_row
+
+    with (root / "Segmentation.csv").open(encoding="utf-8", newline="") as f:
+        seg = list(csv.DictReader(f, delimiter=";"))
+    stats: dict[str, int] = defaultdict(int)
+    groups: dict[tuple[str, str, int], list[dict]] = defaultdict(list)
+    for r in seg:
+        if r["exercise_id"] not in EXERCISES:
+            stats["skipped_exercise_not_supported"] += 1
+        elif r["mocap_erroneous"] == "1":
+            stats["skipped_mocap_erroneous"] += 1  # kept out so both REHAB24-6 variants use the same repetitions
+        else:
+            groups[(r["exercise_id"], r["video_id"], choose_camera(r["cam17_orientation"], EXERCISES[r["exercise_id"]][2]))].append(r)
+    rows: list[Row] = []
+    for (exd, video, cam), reps in groups.items():
+        base = root / "mediapipe" / f"Ex{exd}" / f"{video}-c{cam}"
+        meta_path = base.with_name(base.name + "_meta.json")
+        if not meta_path.exists():
+            stats["skipped_not_extracted"] += len(reps)
+            continue
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        arr = np.load(base.with_name(base.name + "_2d.npy"), allow_pickle=False).astype(np.float64)
+        arr3d = np.load(base.with_name(base.name + "_3d.npy"), allow_pickle=False).astype(np.float64)
+        arr[:, :, 0] *= meta["width"] / meta["height"]  # equalise the x and y scales (frames were stored upright)
+        ex_id, side, _ = EXERCISES[exd]
+        ex = get_exercise(ex_id)
+        assert ex is not None
+        for r in reps:
+            row = build_rep_row(arr, arr3d, ex, side, int(r["first_frame"]), int(r["last_frame"]),
+                                int(r["repetition_number"]), min_conf, {
+                "participant_id": f"P{r['person_id']}", "recording_id": f"{video}-r{r['repetition_number']}",
+                "exercise_id": ex_id, "label": "acceptable" if r["correctness"] == "1" else "incorrect_unspecified",
+                "source": SOURCE_VIDEO, "camera": cam, "orientation_deg": r["cam17_orientation"], "error_code": ""})
+            if row is None:
+                stats["skipped_too_few_valid_frames"] += 1
+                continue
+            rows.append(row)
+            stats["imported"] += 1
+    return rows, dict(stats)
 
 
 def import_rehab24(root: Path, min_conf: float = 0.5) -> tuple[list[Row], dict]:

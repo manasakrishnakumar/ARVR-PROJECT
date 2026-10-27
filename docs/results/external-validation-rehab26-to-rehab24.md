@@ -2,7 +2,7 @@
 
 Shared exercises: shoulder_abduction, sit_to_stand | train: 1110 reps, 5 participants | test: 369 reps, 9 participants (incorrect fraction 0.40)
 
-> Binary correct-vs-incorrect only. Fixed hyperparameters; nothing tuned on the test dataset. Different people, cameras and skeleton source (the test skeleton may come from a different system than the training one), so a drop from within-dataset results is expected and informative. Preliminary and non-clinical; wide intervals with few participants.
+> Binary correct-vs-incorrect only. Fixed hyperparameters; nothing tuned on the test dataset. Different people, cameras and setup (compare the two data sources in the title: they may or may not share a skeleton source), so a drop from within-dataset results is expected and informative. Preliminary and non-clinical; wide intervals with few participants.
 
 | Method | Balanced acc. | 95% CI (participant bootstrap) | Accuracy | Incorrect: precision | recall | F1 |
 |---|---|---|---|---|---|---|

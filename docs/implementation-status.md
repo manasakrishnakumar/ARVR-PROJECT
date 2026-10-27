@@ -1,4 +1,4 @@
-﻿# Implementation status
+# Implementation status
 
 ## Phase 1 — Environment and architecture
 - [x] Environment inspected: Python 3.10.11, Git 2.55, Docker present; Node.js 24.22.1 / npm 11.19.1 installed via winget during this session; Unity not found.
@@ -44,6 +44,13 @@
 - [x] Honest reading: the posture-feature gain over angle-only replicates on an independent dataset, but it is small (about 0.61 balanced accuracy) and does not transfer for arm abduction. On the new data the model flags almost everything as incorrect (recall 0.98, precision 0.47 vs base rate 0.40): the decision threshold does not transfer, and the skeleton-source difference (mocap vs MediaPipe) confounds the drop. Not usable as a classifier yet.
 - [ ] Still open: repetition-count evaluation against Segmentation.csv, own webcam recordings (same pipeline, MediaPipe), run MediaPipe on REHAB24-6 videos for a like-for-like external test, probability calibration / threshold selection, class definitions reviewed by a rehabilitation professional
 - [ ] Raw data is git-ignored (licence); generated reps.csv/lopo_report.md live in datasets/external/rehab26/
+
+## Phase 4d - Like-for-like external validation: MediaPipe on the REHAB24-6 videos
+- [x] Fetched only the needed 31 videos (668 MB of a 2.65 GB zip) via HTTP range requests (backend/app/ml/remote_zip.py, with retry on transient errors; tested against a local range server), ran MediaPipe Pose **Full** (the family REHAB26 used) on the labelled repetition frames only (backend/app/ml/video_pose.py, ~36 fps CPU, a person found in every processed frame in the first recording). Visually checked a skeleton overlay on a real frame. Camera 18 files are portrait but upright (no rotation needed). Extracted arrays store the real video width/height for exact aspect correction; no video frames are stored by the project. Optional deps: backend/requirements-video.txt.
+- [x] 369 repetitions (arm abduction + squat, 9 people with usable reps) imported with the same feature code as REHAB26, including head tilt, heel lift and MediaPipe 3D cues.
+- [x] RESULT (train on REHAB26 only, nothing tuned on test, binary correct vs incorrect, balanced accuracy, 95% CI over participants): majority 0.500; tuned range rule 0.529 (0.48-0.59); RF angle-only 0.492 (0.42-0.56, chance); RF + common posture features 0.579 (0.53-0.63); **RF + full posture features 0.614 (0.56-0.67)**. In-domain reference inside REHAB24-6 (leave-one-participant-out): 0.64 angle-only, 0.72 full. By exercise (full features): squat 0.641, arm abduction 0.567. Report: docs/results/external-validation-like-for-like-mediapipe.md
+- [x] Reading: (1) with the SAME estimator on both sides the transfer result (0.61) is about the same as the earlier mocap-skeleton test (0.61), so the skeleton-source difference was not what limited transfer; the gap to the in-domain 0.72 reflects genuine dataset/setup shift (people, camera, lighting, how errors were produced). (2) The posture-feature benefit over angle-only holds on independent data and with the full feature set, but the absolute level is low. (3) The model still labels almost everything incorrect on new data (recall 0.99, precision 0.47 vs base rate 0.40): the decision threshold does not transfer, so this is not a usable classifier. (4) Arm abduction transfers poorly. (5) 9 participants and a lenient CI: treat as preliminary.
+- [ ] Still open: repetition-count evaluation against Segmentation.csv, own webcam recordings, probability calibration / threshold selection on a validation set, review of class definitions by a rehabilitation professional
 
 ## Later phases: not started
 Pose estimation, angles, repetition counter, assessment, ML, adaptation, dashboard, AR, 3D, evaluation.

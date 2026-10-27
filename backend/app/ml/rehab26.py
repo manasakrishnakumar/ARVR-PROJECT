@@ -68,6 +68,32 @@ def _visible_fraction(arr: np.ndarray, names: list[str], first: int, last: int, 
     return float((seg >= min_conf).all(axis=1).mean()) if len(seg) else 0.0
 
 
+def build_rep_row(arr: np.ndarray, arr3d: np.ndarray | None, ex, side: str, first: int, last_req: int, index: int,
+                  min_conf: float, meta: dict) -> Row | None:
+    """One repetition (frames first..last of a (T,33,4) landmark array) -> dataset row, or None if too few valid frames.
+
+    Shared by all importers so every dataset goes through identical feature code."""
+    names = [n.replace("LEFT_", f"{side}_") for n in ex.landmarks]
+    last = min(last_req, len(arr) - 1)
+    sm, times, angles, missing = AngleSmoother(), [], [], 0
+    for fr in range(first, last + 1):
+        a = joint_angle(*_landmarks(arr[fr], names), min_conf=min_conf)
+        if a is None:
+            missing += 1
+            continue
+        times.append(fr / FPS)
+        angles.append(sm.update(a))
+    n_frames = last - first + 1
+    if len(angles) < 5 or n_frames < 5:
+        return None
+    span = ex.target_angle_deg - ex.start_angle_deg
+    peak = max((a - ex.start_angle_deg) / span for a in angles)
+    rep = Repetition(index=index, t_start=times[0], t_end=times[-1], peak_progress=peak, times=times, angles=angles,
+                     n_frames=n_frames, n_missing=missing, reached_target=False)
+    seg3d = arr3d[first:last + 1] if arr3d is not None and len(arr3d) == len(arr) else None
+    return {**meta, **rep_features(rep), **posture_features(arr[first:last + 1], seg3d, ex, side)}
+
+
 def import_rehab26(root: Path, min_conf: float = 0.5, aspect: float = 1.0) -> tuple[list[Row], dict]:
     """root contains Segmentation.csv and mediapipe/<exN>/<video_id>_cam<k>_2d.npy
 
@@ -114,31 +140,16 @@ def import_rehab26(root: Path, min_conf: float = 0.5, aspect: float = 1.0) -> tu
             if cam not in arrs3d:
                 p3 = folder / f"{video}_cam{cam}_3d.npy"
                 arrs3d[cam] = np.load(p3, allow_pickle=False) if p3.exists() else None
-            arr3d = arrs3d[cam]
-            if arr3d is None:
+            if arrs3d[cam] is None:
                 stats["missing_3d_file"] += 1
-            last = min(last_req, len(arr) - 1)
-            sm, times, angles, missing = AngleSmoother(), [], [], 0
-            for fr in range(first, last + 1):
-                a = joint_angle(*_landmarks(arr[fr], names), min_conf=min_conf)
-                if a is None:
-                    missing += 1
-                    continue
-                times.append(fr / FPS)
-                angles.append(sm.update(a))
-            n_frames = last - first + 1
-            if len(angles) < 5 or n_frames < 5:
+            row = build_rep_row(arr, arrs3d[cam], ex, side, first, last_req, int(r["repetition_number"]), min_conf, {
+                "participant_id": r["person"], "recording_id": f"{r['video_id']}-r{r['repetition_number']}",
+                "exercise_id": ex_id, "label": map_label(r["correctness_score"], r["error_description"]),
+                "source": SOURCE, "camera": cam, "orientation_deg": r["person_orientation"],
+                "error_code": r["error_description"]})
+            if row is None:
                 stats["skipped_too_few_valid_frames"] += 1
                 continue
-            span = ex.target_angle_deg - ex.start_angle_deg
-            peak = max((a - ex.start_angle_deg) / span for a in angles)
-            rep = Repetition(index=int(r["repetition_number"]), t_start=times[0], t_end=times[-1], peak_progress=peak,
-                             times=times, angles=angles, n_frames=n_frames, n_missing=missing, reached_target=False)
-            label = map_label(r["correctness_score"], r["error_description"])
-            seg3d = arr3d[first:last + 1] if arr3d is not None and len(arr3d) == len(arr) else None
-            post = posture_features(arr[first:last + 1], seg3d, ex, side)
-            rows.append({"participant_id": r["person"], "recording_id": f"{r['video_id']}-r{r['repetition_number']}",
-                         "exercise_id": ex_id, "label": label, "source": SOURCE, **rep_features(rep), **post,
-                         "camera": cam, "orientation_deg": r["person_orientation"], "error_code": r["error_description"]})
+            rows.append(row)
             stats["imported"] += 1
     return rows, dict(stats)

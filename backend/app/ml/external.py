@@ -1,4 +1,4 @@
-"""External validation: train on one dataset, test on a different dataset with different people and setup.
+﻿"""External validation: train on one dataset, test on a different dataset with different people and setup.
 
 Nothing about the test dataset is used for any choice. Models use fixed default hyperparameters, and the simple
 range-rule threshold is fitted on the training dataset only. Binary task only (correct vs incorrect) because the
@@ -82,7 +82,13 @@ def _rf(seed: int) -> RandomForestClassifier:
     return RandomForestClassifier(n_estimators=200, class_weight="balanced", min_samples_leaf=5, random_state=seed, n_jobs=1)
 
 
-def external_validation(train: list[Row], test: list[Row], seed: int = 0, n_boot: int = 300) -> dict:
+def external_validation(train: list[Row], test: list[Row], seed: int = 0, n_boot: int = 300,
+                        full_features: bool = False) -> dict:
+    """full_features=True also evaluates the complete feature set (head tilt, heel lift, MediaPipe 3D cues); only
+    meaningful when train and test skeletons both come from a pose estimator with those landmarks."""
+    feature_sets = dict(FEATURE_SETS)
+    if full_features:
+        feature_sets["angle_plus_posture_full"] = FEATURE_NAMES_POSTURE
     shared = sorted({str(r["exercise_id"]) for r in train} & {str(r["exercise_id"]) for r in test})
     if not shared:
         raise ValueError("train and test sets share no exercise")
@@ -92,7 +98,7 @@ def external_validation(train: list[Row], test: list[Row], seed: int = 0, n_boot
     preds: dict[str, list[bool]] = {"majority_class (train prior)": [Counter(_incorrect(train)).most_common(1)[0][0]] * len(test)}
     thr = _fit_range_thresholds(train)
     preds["range_rule (threshold from train)"] = [float(r["peak_progress"]) < thr[str(r["exercise_id"])] for r in test]
-    for name, feats in FEATURE_SETS.items():
+    for name, feats in feature_sets.items():
         preds[f"rf_{name} (trained on train set)"] = list(_rf(seed).fit(_x(train, feats), _incorrect(train)).predict(_x(test, feats)))
 
     out: dict = {"shared_exercises": shared, "n_train": len(train), "n_test": len(test),
@@ -113,7 +119,7 @@ def external_validation(train: list[Row], test: list[Row], seed: int = 0, n_boot
     # reference: how separable the classes are WITHIN the test dataset (leave-one-participant-out, fixed params)
     ref = {}
     people = out["test_participants"]
-    for name, feats in FEATURE_SETS.items():
+    for name, feats in feature_sets.items():
         pred = [None] * len(test)
         for held in people:
             tr = [i for i, r in enumerate(test) if r["participant_id"] != held]
@@ -135,7 +141,7 @@ def render_external_report(ev: dict, train_name: str, test_name: str) -> str:
          f"{len(ev['train_participants'])} participants | test: {ev['n_test']} reps, {len(ev['test_participants'])} participants "
          f"(incorrect fraction {ev['test_incorrect_fraction']:.2f})", "",
          "> Binary correct-vs-incorrect only. Fixed hyperparameters; nothing tuned on the test dataset. Different people, "
-         "cameras and skeleton source (the test skeleton may come from a different system than the training one), so a "
+         "cameras and setup (compare the two data sources in the title: they may or may not share a skeleton source), so a "
          "drop from within-dataset results is expected and informative. Preliminary and non-clinical; "
          "wide intervals with few participants.", "",
          "| Method | Balanced acc. | 95% CI (participant bootstrap) | Accuracy | Incorrect: precision | recall | F1 |",
@@ -156,3 +162,4 @@ def render_external_report(ev: dict, train_name: str, test_name: str) -> str:
     for n, m in ev["in_domain_reference_loo_participant"].items():
         L.append(f"| {n} | {m['balanced_accuracy']:.3f} | {m['accuracy']:.3f} | {m['incorrect_f1']:.3f} |")
     return "\n".join(L) + "\n"
+

@@ -1,0 +1,3 @@
+# Optional: only needed to run pose estimation on videos (python -m app.ml.cli extract-rehab24-videos)
+mediapipe>=0.10
+opencv-python>=4.8
