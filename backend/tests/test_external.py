@@ -17,7 +17,7 @@ def _rows(n, seed, prefix):
 def test_runs_and_reports_all_parts():
     ev = external_validation(_rows(8, 1, "tr"), _rows(5, 2, "te"), n_boot=10)
     assert ev["n_test"] > 0 and set(ev["train_participants"]).isdisjoint(ev["test_participants"])
-    assert len(ev["methods"]) == 4 and "in_domain_reference_loo_participant" in ev
+    assert len(ev["methods"]) == 6 and "in_domain_reference_loo_participant" in ev  # majority, range rule, 2 forests x (default, train threshold)
     text = render_external_report(ev, "train-set", "test-set")
     assert "External validation" in text and "Preliminary" in text
 
@@ -31,6 +31,19 @@ def test_test_labels_never_influence_predictions():
         pos = lambda m: m["confusion_matrix [[TN, FP], [FN, TP]]"]
         pa, pb = pos(a["methods"][name]), pos(b["methods"][name])
         assert pa[0][1] + pa[1][1] == pb[0][1] + pb[1][1], name  # same number of 'incorrect' predictions
+
+
+def test_threshold_is_chosen_from_training_data_only_and_calibration_is_reported():
+    train, test = _rows(8, 1, "tr"), _rows(5, 2, "te")
+    a = external_validation(train, test, n_boot=5)
+    flipped = [{**r, "label": random.Random(i).choice(["acceptable", "too_fast"])} for i, r in enumerate(test)]
+    b = external_validation(train, flipped, n_boot=5)
+    assert a["decision_thresholds_from_train"] == b["decision_thresholds_from_train"]  # test labels never move the threshold
+    for t in a["decision_thresholds_from_train"].values():
+        assert 0.05 <= t <= 0.95
+    cal = next(iter(a["probability_calibration_on_test"].values()))
+    assert 0 <= cal["brier"] <= 1 and 0 <= cal["ece"] <= 1 and 0 <= cal["mean_predicted_probability"] <= 1
+    assert any("threshold chosen on train participants" in k for k in a["methods"])
 
 
 def test_no_shared_exercise_is_an_error():

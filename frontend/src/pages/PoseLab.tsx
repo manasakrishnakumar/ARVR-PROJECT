@@ -4,37 +4,14 @@ import RecommendationCard from "../components/RecommendationCard";
 import { bodyAngles, isotropic, jointAngle, MIN_CONFIDENCE, type JointAngles } from "../pose/angles";
 import { DemoEstimator } from "../pose/demo";
 import { MediaPipeEstimator } from "../pose/mediapipe";
-import { LANDMARK_INDEX, SKELETON, type PoseEstimator, type PoseFrame } from "../pose/types";
+import { drawSkeleton } from "../pose/draw";
+import { LANDMARK_INDEX, type PoseEstimator } from "../pose/types";
 import { api } from "../services/api";
 import { AnalysisSocket, type RepMsg, type SocketStatus, type StateMsg } from "../services/analysisSocket";
 import type { AdaptationState, CompleteOut, Exercise, SessionCreated, User } from "../types/api";
 
 type Mode = "idle" | "camera" | "demo";
 const SEND_INTERVAL_MS = 66; // ~15 Hz is plenty for rep counting
-
-function draw(canvas: HTMLCanvasElement, frame: PoseFrame | null, mirror: boolean) {
-  const ctx = canvas.getContext("2d")!;
-  const { width: w, height: h } = canvas;
-  ctx.clearRect(0, 0, w, h);
-  if (!frame?.landmarks) return;
-  const lms = frame.landmarks;
-  const pt = (i: number) => {
-    const l = lms[i];
-    return { x: (mirror ? 1 - l.x : l.x) * w, y: l.y * h, ok: l.visibility >= MIN_CONFIDENCE };
-  };
-  ctx.lineWidth = 3;
-  for (const [a, b] of SKELETON) {
-    const p = pt(a), q = pt(b);
-    ctx.strokeStyle = p.ok && q.ok ? "#22d3a8" : "rgba(250,204,21,.5)";
-    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
-  }
-  lms.forEach((_, i) => {
-    if (i < 11 || lms[i].visibility === 0) return;
-    const p = pt(i);
-    ctx.fillStyle = p.ok ? "#fff" : "#facc15";
-    ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
-  });
-}
 
 const LABELS: Record<string, string> = {
   acceptable: "Acceptable", insufficient_range: "Range short", incomplete_repetition: "Incomplete",
@@ -184,7 +161,7 @@ export default function PoseLab({ exercises, user, initialExerciseId, onSessionS
       if (m === "camera" && (!video || video.readyState < 2)) return;
       lastTs = ts;
       const frame = est.detect(video, ts);
-      draw(canvas, frame, m === "camera");
+      drawSkeleton(canvas, frame, m === "camera");
 
       // exercise angle -> backend (which owns counting and assessment)
       const ex = exRef.current;

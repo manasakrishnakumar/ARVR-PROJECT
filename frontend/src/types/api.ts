@@ -134,7 +134,7 @@ export interface SessionDetail {
 
 export interface ResearchResult {
   id: string;
-  kind: "external" | "lopo" | "synthetic" | "train";
+  kind: "external" | "lopo" | "synthetic" | "train" | "counting" | "angle" | "simulation";
   title: string;
   caveat: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

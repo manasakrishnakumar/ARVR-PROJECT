@@ -11,6 +11,8 @@ import Settings from "./pages/Settings";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Research = lazy(() => import("./pages/Research"));
 const SessionPage = lazy(() => import("./pages/SessionPage"));
+const PoseAnalysis = lazy(() => import("./pages/PoseAnalysis"));
+const Collect = lazy(() => import("./pages/Collect"));
 const SessionSummary = lazy(() => import("./pages/SessionSummary"));
 
 const wait = (el: ReactElement) => <Suspense fallback={<p className="muted">Loading...</p>}>{el}</Suspense>;
@@ -22,6 +24,8 @@ export default function App() {
         <Route index element={<Landing />} />
         <Route path="exercises" element={<Library />} />
         <Route path="session" element={wait(<SessionPage />)} />
+        <Route path="analysis" element={wait(<PoseAnalysis />)} />
+        <Route path="collect" element={wait(<Collect />)} />
         <Route path="sessions/:id" element={wait(<SessionSummary />)} />
         <Route path="dashboard" element={wait(<Dashboard />)} />
         <Route path="research" element={wait(<Research />)} />

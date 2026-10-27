@@ -9,7 +9,9 @@ Shared exercises: shoulder_abduction, sit_to_stand | train: 1110 reps, 5 partici
 | majority_class (train prior) | 0.500 | 0.500 to 0.500 | 0.404 | 0.404 | 1.000 | 0.575 |
 | range_rule (threshold from train) | 0.528 | 0.482 to 0.591 | 0.615 | 0.733 | 0.074 | 0.134 |
 | rf_angle_only (trained on train set) | 0.532 | 0.485 to 0.583 | 0.477 | 0.424 | 0.819 | 0.558 |
+| rf_angle_only (threshold chosen on train participants) | 0.552 | 0.501 to 0.611 | 0.537 | 0.448 | 0.631 | 0.524 |
 | rf_angle_plus_posture (trained on train set) | 0.608 | 0.561 to 0.656 | 0.537 | 0.465 | 0.980 | 0.631 |
+| rf_angle_plus_posture (threshold chosen on train participants) | 0.700 | 0.629 to 0.775 | 0.705 | 0.623 | 0.678 | 0.650 |
 
 ## By exercise (balanced accuracy)
 
@@ -18,7 +20,9 @@ Shared exercises: shoulder_abduction, sit_to_stand | train: 1110 reps, 5 partici
 | majority_class (train prior) | 0.500 | 0.500 |
 | range_rule (threshold from train) | 0.540 | 0.500 |
 | rf_angle_only (trained on train set) | 0.510 | 0.509 |
+| rf_angle_only (threshold chosen on train participants) | 0.474 | 0.586 |
 | rf_angle_plus_posture (trained on train set) | 0.522 | 0.664 |
+| rf_angle_plus_posture (threshold chosen on train participants) | 0.607 | 0.798 |
 
 ## By test participant (balanced accuracy, trained-on-train random forest with posture features)
 

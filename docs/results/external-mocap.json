@@ -9,6 +9,24 @@
     ],
     "n_train": 1110,
     "n_test": 369,
+    "decision_thresholds_from_train": {
+      "angle_only": 0.69,
+      "angle_plus_posture": 0.81
+    },
+    "probability_calibration_on_test": {
+      "angle_only": {
+        "brier": 0.35108029807016067,
+        "ece": 0.32359876685940925,
+        "mean_predicted_probability": 0.6935435457472424,
+        "observed_incorrect_rate": 0.4037940379403794
+      },
+      "angle_plus_posture": {
+        "brier": 0.3044728448035857,
+        "ece": 0.32050671075069675,
+        "mean_predicted_probability": 0.7243007486910761,
+        "observed_incorrect_rate": 0.4037940379403794
+      }
+    },
     "train_participants": [
       "R26-P1",
       "R26-P2",
@@ -246,6 +264,77 @@
           "P9": 0.5549568965517242
         }
       },
+      "rf_angle_only (threshold chosen on train participants)": {
+        "n": 369,
+        "accuracy": 0.5365853658536586,
+        "balanced_accuracy": 0.5517998779743746,
+        "incorrect_precision": 0.44761904761904764,
+        "incorrect_recall": 0.6308724832214765,
+        "incorrect_f1": 0.5236768802228413,
+        "confusion_matrix [[TN, FP], [FN, TP]]": [
+          [
+            104,
+            116
+          ],
+          [
+            55,
+            94
+          ]
+        ],
+        "balanced_accuracy_ci95_participant_bootstrap": [
+          0.5007416056551376,
+          0.6110697443534376
+        ],
+        "by_exercise": {
+          "shoulder_abduction": {
+            "n": 178,
+            "accuracy": 0.47191011235955055,
+            "balanced_accuracy": 0.47424242424242424,
+            "incorrect_precision": 0.47619047619047616,
+            "incorrect_recall": 0.6818181818181818,
+            "incorrect_f1": 0.5607476635514018,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                24,
+                66
+              ],
+              [
+                28,
+                60
+              ]
+            ]
+          },
+          "sit_to_stand": {
+            "n": 191,
+            "accuracy": 0.5968586387434555,
+            "balanced_accuracy": 0.5863808322824716,
+            "incorrect_precision": 0.40476190476190477,
+            "incorrect_recall": 0.5573770491803278,
+            "incorrect_f1": 0.46896551724137925,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                80,
+                50
+              ],
+              [
+                27,
+                34
+              ]
+            ]
+          }
+        },
+        "by_participant_balanced_accuracy": {
+          "P1": 0.6776785714285714,
+          "P2": 0.46041055718475077,
+          "P3": 0.5,
+          "P4": 0.44179894179894175,
+          "P5": 0.6154761904761905,
+          "P6": 0.41041666666666665,
+          "P7": 0.725,
+          "P8": 0.5420289855072464,
+          "P9": 0.5711206896551724
+        }
+      },
       "rf_angle_plus_posture (trained on train set)": {
         "n": 369,
         "accuracy": 0.5365853658536586,
@@ -315,6 +404,77 @@
           "P7": 0.675,
           "P8": 0.5753623188405798,
           "P9": 0.7068965517241379
+        }
+      },
+      "rf_angle_plus_posture (threshold chosen on train participants)": {
+        "n": 369,
+        "accuracy": 0.7046070460704607,
+        "balanced_accuracy": 0.7002898108602806,
+        "incorrect_precision": 0.6234567901234568,
+        "incorrect_recall": 0.6778523489932886,
+        "incorrect_f1": 0.6495176848874598,
+        "confusion_matrix [[TN, FP], [FN, TP]]": [
+          [
+            159,
+            61
+          ],
+          [
+            48,
+            101
+          ]
+        ],
+        "balanced_accuracy_ci95_participant_bootstrap": [
+          0.6285921625544266,
+          0.7748023005032352
+        ],
+        "by_exercise": {
+          "shoulder_abduction": {
+            "n": 178,
+            "accuracy": 0.6067415730337079,
+            "balanced_accuracy": 0.6065656565656565,
+            "incorrect_precision": 0.6046511627906976,
+            "incorrect_recall": 0.5909090909090909,
+            "incorrect_f1": 0.5977011494252873,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                56,
+                34
+              ],
+              [
+                36,
+                52
+              ]
+            ]
+          },
+          "sit_to_stand": {
+            "n": 191,
+            "accuracy": 0.7958115183246073,
+            "balanced_accuracy": 0.7977931904161413,
+            "incorrect_precision": 0.6447368421052632,
+            "incorrect_recall": 0.8032786885245902,
+            "incorrect_f1": 0.7153284671532848,
+            "confusion_matrix [[TN, FP], [FN, TP]]": [
+              [
+                103,
+                27
+              ],
+              [
+                12,
+                49
+              ]
+            ]
+          }
+        },
+        "by_participant_balanced_accuracy": {
+          "P1": 0.6410714285714285,
+          "P2": 0.5733137829912024,
+          "P3": 0.825,
+          "P4": 0.5476190476190476,
+          "P5": 0.8309523809523809,
+          "P6": 0.7791666666666667,
+          "P7": 0.825,
+          "P8": 0.6159420289855072,
+          "P9": 0.7995689655172413
         }
       }
     },

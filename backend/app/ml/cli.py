@@ -48,6 +48,17 @@ def main() -> None:
     xv.add_argument("--root", type=Path, default=settings.artifacts_dir.parent / "datasets" / "external" / "rehab24")
     xv.add_argument("--model", type=Path, default=settings.artifacts_dir.parent / "frontend" / "public" / "models" / "pose_landmarker_full.task")
     xv.add_argument("--limit", type=int, default=0, help="process only the first N recordings (0 = all)")
+    io_ = sub.add_parser("import-own", help="convert recordings made with the app's Record data page into repetition rows")
+    io_.add_argument("--dir", type=Path, default=settings.artifacts_dir.parent / "datasets" / "own")
+    io_.add_argument("--out", type=Path, default=None)
+    io_.add_argument("--include-synthetic", action="store_true", help="also import recordings flagged synthetic (pipeline tests only)")
+    ce = sub.add_parser("count-eval", help="repetition counting vs the datasets' labelled repetition boundaries")
+    ce.add_argument("--rehab26", type=Path, default=settings.artifacts_dir.parent / "datasets" / "external" / "rehab26")
+    ce.add_argument("--rehab24", type=Path, default=settings.artifacts_dir.parent / "datasets" / "external" / "rehab24")
+    ce.add_argument("--json", type=Path, default=None)
+    ae = sub.add_parser("angle-eval", help="MediaPipe joint-angle error vs motion capture on REHAB24-6 (needs extracted videos)")
+    ae.add_argument("--root", type=Path, default=settings.artifacts_dir.parent / "datasets" / "external" / "rehab24")
+    ae.add_argument("--json", type=Path, default=None)
     iv = sub.add_parser("import-rehab24-video", help="convert MediaPipe output on the REHAB24-6 videos into a repetition CSV")
     iv.add_argument("--root", type=Path, default=settings.artifacts_dir.parent / "datasets" / "external" / "rehab24")
     iv.add_argument("--out", type=Path, default=None)
@@ -128,6 +139,41 @@ def main() -> None:
             base.with_name(base.name + "_meta.json").write_text(json.dumps(meta), encoding="utf-8")
             print(f"[{k}/{len(need)}] {video} cam{cam}: {meta['detected']}/{meta['processed']} frames with a person, "
                   f"{meta['width']}x{meta['height']}, {meta['seconds']}s", flush=True)
+    elif a.cmd == "import-own":
+        from app.ml.own_recordings import import_recordings
+
+        rows, stats = import_recordings(a.dir, include_synthetic=a.include_synthetic)
+        for msg in stats.pop("problem_messages", []):  # type: ignore[arg-type]
+            print("  rejected:", msg)
+        if rows:
+            out = a.out or a.dir / "reps.csv"
+            write_csv(rows, out)
+            print(f"Wrote {len(rows)} repetitions to {out}")
+        print(json.dumps(stats))
+    elif a.cmd == "count-eval":
+        from app.ml.count_eval import blocks_rehab24_mocap, blocks_rehab26, evaluate_blocks
+
+        out = {}
+        for name, loader, root in (("REHAB26 (MediaPipe skeletons)", blocks_rehab26, a.rehab26),
+                                   ("REHAB24-6 (motion-capture joints)", blocks_rehab24_mocap, a.rehab24)):
+            blocks = loader(root)
+            out[name] = evaluate_blocks(blocks)
+            for mode, m in out[name].items():
+                print(f"{name:34s} {mode:13s} blocks={m['blocks']:3d} labelled={m['labelled_repetitions']:4d} detected={m['detected_repetitions']:4d} "
+                      f"MAE count={m['mean_absolute_count_error']:.2f} exact={m['exact_count_fraction']:.2f} F1={m['f1']:.2f}")
+        _write_result(a.json, "counting", "Repetition counting vs labelled repetition boundaries",
+                      "Real recordings; 'illustrative' uses the exercise definition's angles, 'auto' calibrates the range from the "
+                      "recording itself (no labels). Healthy volunteers, a few people, 2D single-view angles. Preliminary.", out)
+    elif a.cmd == "angle-eval":
+        from app.ml.angle_eval import evaluate_rehab24
+
+        ev = evaluate_rehab24(a.root)
+        o = ev["overall"]
+        print(f"recordings={ev['recordings']} (skipped {ev['recordings_skipped']}) n={o['n']} MAE={o['mae_deg']:.2f} deg "
+              f"RMSE={o['rmse_deg']:.2f} bias={o['bias_deg']:.2f} r={o['pearson_r']:.3f} best_lag_median={ev['best_lag_frames_median']}")
+        for k, m in {**ev["by_exercise"], **ev["by_camera"]}.items():
+            print(f"  {k:20s} n={m['n']:6d} MAE={m['mae_deg']:.2f} RMSE={m['rmse_deg']:.2f} bias={m['bias_deg']:.2f}")
+        _write_result(a.json, "angle", "Joint-angle accuracy: MediaPipe vs motion capture (REHAB24-6)", ev["note"], ev)
     elif a.cmd == "import-rehab24-video":
         from app.ml.rehab24 import import_rehab24_video
 

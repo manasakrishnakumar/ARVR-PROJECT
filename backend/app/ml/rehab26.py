@@ -102,6 +102,8 @@ def import_rehab26(root: Path, min_conf: float = 0.5, aspect: float = 1.0) -> tu
     the portrait 9:16 value (0.5625) is inferred from comparing 2D and 3D skeleton scales (median estimate 0.53)."""
     with (root / "Segmentation.csv").open(encoding="utf-8", newline="") as f:
         seg = list(csv.DictReader(f, delimiter=";"))
+    # participants are pseudonymised on import (the dataset lists first names): R26-P1, R26-P2, ... in alphabetical order of name
+    alias = {n: f"R26-P{i + 1}" for i, n in enumerate(sorted({r["person"] for r in seg}))}
     stats: dict[str, int] = defaultdict(int)
     groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for r in seg:
@@ -143,7 +145,7 @@ def import_rehab26(root: Path, min_conf: float = 0.5, aspect: float = 1.0) -> tu
             if arrs3d[cam] is None:
                 stats["missing_3d_file"] += 1
             row = build_rep_row(arr, arrs3d[cam], ex, side, first, last_req, int(r["repetition_number"]), min_conf, {
-                "participant_id": r["person"], "recording_id": f"{r['video_id']}-r{r['repetition_number']}",
+                "participant_id": alias[r["person"]], "recording_id": f"{r['video_id']}-r{r['repetition_number']}",
                 "exercise_id": ex_id, "label": map_label(r["correctness_score"], r["error_description"]),
                 "source": SOURCE, "camera": cam, "orientation_deg": r["person_orientation"],
                 "error_code": r["error_description"]})

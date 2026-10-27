@@ -42,6 +42,12 @@ def root(tmp_path):
     return tmp_path
 
 
+def test_participant_names_from_the_dataset_never_reach_the_output(root):
+    rows, _ = import_rehab26(root)
+    assert {r["participant_id"] for r in rows} == {"R26-P1", "R26-P2", "R26-P3"}
+    assert not any(name in str(rows) for name in ("R26-P1", "R26-P2", "R26-P3", "R26-P4", "R26-P5"))
+
+
 def test_label_mapping_and_camera_choice():
     assert map_label("1", "") == "acceptable"
     assert map_label("5", "ERR_LOW_ABDUCTION") == "insufficient_range"
@@ -64,10 +70,10 @@ def test_import_counts_labels_and_skips(root):
                      "missing_3d_file": 9}  # fixture has no 3D skeletons: 3D features fall back to zeros
     ds.validate_rows(rows)
     by = {(r["participant_id"], r["recording_id"].split("-r")[1]): r for r in rows}
-    assert by[("A", "1")]["label"] == "acceptable" and by[("A", "2")]["label"] == "insufficient_range"
-    assert by[("A", "3")]["label"] == "posture_deviation"
-    assert by[("A", "1")]["peak_progress"] > 0.9 and by[("A", "2")]["peak_progress"] < 0.5
-    assert by[("A", "1")]["reliability"] == 1.0 and by[("A", "1")]["source"].startswith("rehab26")
+    assert by[("R26-P1", "1")]["label"] == "acceptable" and by[("R26-P1", "2")]["label"] == "insufficient_range"
+    assert by[("R26-P1", "3")]["label"] == "posture_deviation"
+    assert by[("R26-P1", "1")]["peak_progress"] > 0.9 and by[("R26-P1", "2")]["peak_progress"] < 0.5
+    assert by[("R26-P1", "1")]["reliability"] == 1.0 and by[("R26-P1", "1")]["source"].startswith("rehab26")
 
 
 def test_aspect_correction_changes_angles_but_not_for_square(root):
@@ -88,7 +94,7 @@ def test_shoulder_extension_is_supported(root):
     with (root / "Segmentation.csv").open("a", newline="") as f:
         csv.writer(f, delimiter=";").writerow(["ex7_X", "7", "right", "X", 1, 0, 59, 90, "5", "ERR_TORSO_FORWARD", ""])
     rows, stats = import_rehab26(root)
-    r = next(r for r in rows if r["participant_id"] == "X")
+    r = next(r for r in rows if r["participant_id"] == "R26-P5")
     assert r["exercise_id"] == "shoulder_extension" and r["label"] == "posture_deviation" and r["camera"] == 1
     assert stats["skipped_exercise_not_supported"] == 1  # only the fixture's ex4 row; ex7 is now imported
 
@@ -109,15 +115,15 @@ def test_csv_roundtrip_keeps_extra_columns_and_lopo_runs(root, tmp_path):
     back = ds.read_csv(out)
     assert len(back) == 9 and back[0]["camera"] == "1"
     ev = run_lopo(back, n_boot=5)
-    assert ev["participants"] == ["A", "B", "C"] and ev["n"] == 9
+    assert ev["participants"] == ["R26-P1", "R26-P2", "R26-P3"] and ev["n"] == 9
     assert set(ev["methods"]) == {"majority_class", "rule_based", "rule_range_tuned", "rf_base", "rf_base_tuned",
                                   "rf_posture", "rf_posture_tuned"}
     assert "binary_correct_vs_incorrect" in ev["methods"]["rf_posture_tuned"]
     # tuning is chosen per fold from training participants; each fold records its held-out person
-    assert {t["held_out"] for t in ev["tuning"]["rf_base_tuned"]} == {"A", "B", "C"}
+    assert {t["held_out"] for t in ev["tuning"]["rf_base_tuned"]} == {"R26-P1", "R26-P2", "R26-P3"}
 
 
 def test_lopo_needs_three_participants(root):
     rows, _ = import_rehab26(root)
     with pytest.raises(ValueError):
-        run_lopo([r for r in rows if r["participant_id"] in ("A", "B")], n_boot=5)
+        run_lopo([r for r in rows if r["participant_id"] in ("R26-P1", "R26-P2")], n_boot=5)

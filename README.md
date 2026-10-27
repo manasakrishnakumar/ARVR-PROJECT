@@ -33,3 +33,6 @@ npm run build
 .\.venv\Scripts\python -m app.ml.cli lopo --data <reps.csv> --json ..\docs\results\x.json   # leave-one-participant-out
 ```
 Real research datasets (REHAB26, REHAB24-6; CC BY-NC 4.0) are not included: see `docs/dataset-documentation.md` for how they were obtained and imported. Results: `docs/results/`. Progress and honest limitations: `docs/implementation-status.md`, `docs/adaptive-controller.md`, `docs/model-card.md`.
+
+## Documentation
+[Architecture](docs/architecture.md) · [Installation](docs/installation.md) (or run `scripts\setup.ps1`) · [User guide and manual webcam test](docs/user-guide.md) · [Research methodology and contribution](docs/research-methodology.md) · [API reference](docs/api-documentation.md) · [Limitations and safety](docs/limitations-and-safety.md) · [Adaptive controller](docs/adaptive-controller.md) · [Datasets](docs/dataset-documentation.md) · [Model card](docs/model-card.md) · [Thesis outline](docs/thesis-outline.md) · [Implementation status](docs/implementation-status.md)

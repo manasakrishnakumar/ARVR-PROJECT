@@ -1245,28 +1245,28 @@
       "rule_range_tuned": [
         {
           "shoulder_extension": 0.2,
-          "shoulder_abduction": 1.3,
-          "sit_to_stand": 0.45
+          "sit_to_stand": 0.45,
+          "shoulder_abduction": 1.3
         },
         {
           "shoulder_extension": 0.1,
-          "shoulder_abduction": 1.3,
-          "sit_to_stand": 0.45
+          "sit_to_stand": 0.45,
+          "shoulder_abduction": 1.3
         },
         {
           "shoulder_extension": 0.1,
-          "shoulder_abduction": 1.3,
-          "sit_to_stand": 0.5
+          "sit_to_stand": 0.5,
+          "shoulder_abduction": 1.3
         },
         {
           "shoulder_extension": 0.1,
-          "shoulder_abduction": 1.3,
-          "sit_to_stand": 0.45
+          "sit_to_stand": 0.45,
+          "shoulder_abduction": 1.3
         },
         {
           "shoulder_extension": 0.1,
-          "shoulder_abduction": 1.3,
-          "sit_to_stand": 0.45
+          "sit_to_stand": 0.45,
+          "shoulder_abduction": 1.3
         }
       ]
     },

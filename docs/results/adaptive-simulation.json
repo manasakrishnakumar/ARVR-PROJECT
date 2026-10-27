@@ -1,0 +1,224 @@
+{
+  "kind": "simulation",
+  "title": "Adaptive vs fixed difficulty: SIMULATION of controller behaviour",
+  "caveat": "Made-up user models with stated assumptions. Verifies safety and behaviour of the policy; says nothing about whether adaptive difficulty helps real people.",
+  "data": {
+    "n_users_per_model": 200,
+    "n_sessions": 40,
+    "assumptions": "SIMULATION of the adaptive controller against fixed-difficulty baselines.\n\nThis checks how the controller BEHAVES under explicitly stated, made-up user models (stable, improving, fluctuating,\ndeclining ability). It cannot show that adaptive difficulty helps real people: the outcomes follow from the assumptions\nbelow. What it can show: the policy stays inside its safety limits, reacts in the intended direction, does not oscillate,\nand spends fewer sessions at badly matched levels than a fixed level under the same assumptions.\n\nAssumptions (all arbitrary and stated): a user has an ability a in [0, 1]; at level L a repetition is acceptable with\nprobability sigmoid(10 * (a - d_L)) where d = {1: 0.35, 2: 0.55, 3: 0.75}; acceptable repetitions score ~0.95 and count;\nunacceptable ones score ~0.5 and do not count; 5% of repetitions are unreliable.\n",
+    "models": {
+      "stable": {
+        "policies": {
+          "fixed_level_1": {
+            "too_hard_share": 0.1,
+            "too_easy_share": 0.375,
+            "mismatch_share": 0.475,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 1.0,
+            "violations": 0.0
+          },
+          "fixed_level_2": {
+            "too_hard_share": 0.435,
+            "too_easy_share": 0.1,
+            "mismatch_share": 0.535,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 2.0,
+            "violations": 0.0
+          },
+          "fixed_level_3": {
+            "too_hard_share": 0.77,
+            "too_easy_share": 0.0,
+            "mismatch_share": 0.77,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 3.0,
+            "violations": 0.0
+          },
+          "adaptive": {
+            "too_hard_share": 0.1545,
+            "too_easy_share": 0.042125,
+            "mismatch_share": 0.19662500000000002,
+            "level_changes": 2.165,
+            "direction_reversals": 1.08,
+            "pause_share": 0.040625,
+            "final_level": 1.795,
+            "violations": 0.0
+          }
+        },
+        "best_fixed_by_mismatch": "fixed_level_1",
+        "adaptive_minus_best_fixed_mismatch_share": {
+          "mean": -0.278375,
+          "ci95": [
+            -0.344375,
+            -0.2165
+          ]
+        },
+        "safety_violations_total": 0
+      },
+      "improving": {
+        "policies": {
+          "fixed_level_1": {
+            "too_hard_share": 0.06725,
+            "too_easy_share": 0.464375,
+            "mismatch_share": 0.531625,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 1.0,
+            "violations": 0.0
+          },
+          "fixed_level_2": {
+            "too_hard_share": 0.34387500000000004,
+            "too_easy_share": 0.12737500000000002,
+            "mismatch_share": 0.47125,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 2.0,
+            "violations": 0.0
+          },
+          "fixed_level_3": {
+            "too_hard_share": 0.7391249999999999,
+            "too_easy_share": 0.0,
+            "mismatch_share": 0.7391249999999999,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 3.0,
+            "violations": 0.0
+          },
+          "adaptive": {
+            "too_hard_share": 0.094,
+            "too_easy_share": 0.01975,
+            "mismatch_share": 0.11375,
+            "level_changes": 2.225,
+            "direction_reversals": 0.585,
+            "pause_share": 0.033375,
+            "final_level": 2.615,
+            "violations": 0.0
+          }
+        },
+        "best_fixed_by_mismatch": "fixed_level_2",
+        "adaptive_minus_best_fixed_mismatch_share": {
+          "mean": -0.3575,
+          "ci95": [
+            -0.36625,
+            -0.34862499999999996
+          ]
+        },
+        "safety_violations_total": 0
+      },
+      "fluctuating": {
+        "policies": {
+          "fixed_level_1": {
+            "too_hard_share": 0.07137500000000001,
+            "too_easy_share": 0.31825,
+            "mismatch_share": 0.389625,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 1.0,
+            "violations": 0.0
+          },
+          "fixed_level_2": {
+            "too_hard_share": 0.468125,
+            "too_easy_share": 0.034375,
+            "mismatch_share": 0.5025,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 2.0,
+            "violations": 0.0
+          },
+          "fixed_level_3": {
+            "too_hard_share": 0.87,
+            "too_easy_share": 0.0,
+            "mismatch_share": 0.87,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 3.0,
+            "violations": 0.0
+          },
+          "adaptive": {
+            "too_hard_share": 0.18925,
+            "too_easy_share": 0.075375,
+            "mismatch_share": 0.264625,
+            "level_changes": 3.095,
+            "direction_reversals": 1.975,
+            "pause_share": 0.06375,
+            "final_level": 1.625,
+            "violations": 0.0
+          }
+        },
+        "best_fixed_by_mismatch": "fixed_level_1",
+        "adaptive_minus_best_fixed_mismatch_share": {
+          "mean": -0.125,
+          "ci95": [
+            -0.167625,
+            -0.08537499999999999
+          ]
+        },
+        "safety_violations_total": 0
+      },
+      "declining": {
+        "policies": {
+          "fixed_level_1": {
+            "too_hard_share": 0.184875,
+            "too_easy_share": 0.227375,
+            "mismatch_share": 0.41225,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 1.0,
+            "violations": 0.0
+          },
+          "fixed_level_2": {
+            "too_hard_share": 0.581,
+            "too_easy_share": 0.013500000000000002,
+            "mismatch_share": 0.5945,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 2.0,
+            "violations": 0.0
+          },
+          "fixed_level_3": {
+            "too_hard_share": 0.9221250000000001,
+            "too_easy_share": 0.0,
+            "mismatch_share": 0.9221250000000001,
+            "level_changes": 0.0,
+            "direction_reversals": 0.0,
+            "pause_share": 0.0,
+            "final_level": 3.0,
+            "violations": 0.0
+          },
+          "adaptive": {
+            "too_hard_share": 0.31125,
+            "too_easy_share": 0.06825,
+            "mismatch_share": 0.3795,
+            "level_changes": 2.905,
+            "direction_reversals": 1.43,
+            "pause_share": 0.1035,
+            "final_level": 1.015,
+            "violations": 0.0
+          }
+        },
+        "best_fixed_by_mismatch": "fixed_level_1",
+        "adaptive_minus_best_fixed_mismatch_share": {
+          "mean": -0.03275,
+          "ci95": [
+            -0.052000000000000005,
+            -0.012875000000000008
+          ]
+        },
+        "safety_violations_total": 0
+      }
+    }
+  }
+}

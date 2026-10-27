@@ -1,0 +1,77 @@
+{
+  "kind": "counting",
+  "title": "Repetition counting vs labelled repetition boundaries",
+  "caveat": "Real recordings; 'illustrative' uses the exercise definition's angles, 'auto' calibrates the range from the recording itself (no labels). Healthy volunteers, a few people, 2D single-view angles. Preliminary.",
+  "data": {
+    "REHAB26 (MediaPipe skeletons)": {
+      "illustrative": {
+        "blocks": 165,
+        "blocks_skipped_no_calibration": 0,
+        "labelled_repetitions": 1665,
+        "detected_repetitions": 1506,
+        "matched": 1425,
+        "mean_absolute_count_error": 1.0242424242424242,
+        "exact_count_fraction": 0.7818181818181819,
+        "precision": 0.9462151394422311,
+        "recall": 0.8558558558558559,
+        "f1": 0.8987701040681173,
+        "mean_absolute_count_error_by_exercise": {
+          "shoulder_abduction": 0.03636363636363636,
+          "sit_to_stand": 0.03636363636363636,
+          "shoulder_extension": 3.0
+        }
+      },
+      "auto": {
+        "blocks": 162,
+        "blocks_skipped_no_calibration": 3,
+        "labelled_repetitions": 1635,
+        "detected_repetitions": 1642,
+        "matched": 1583,
+        "mean_absolute_count_error": 0.2037037037037037,
+        "exact_count_fraction": 0.8703703703703703,
+        "precision": 0.964068209500609,
+        "recall": 0.9681957186544342,
+        "f1": 0.9661275556911808,
+        "mean_absolute_count_error_by_exercise": {
+          "shoulder_abduction": 0.03636363636363636,
+          "sit_to_stand": 0.10909090909090909,
+          "shoulder_extension": 0.4807692307692308
+        }
+      }
+    },
+    "REHAB24-6 (motion-capture joints)": {
+      "illustrative": {
+        "blocks": 31,
+        "blocks_skipped_no_calibration": 0,
+        "labelled_repetitions": 369,
+        "detected_repetitions": 385,
+        "matched": 335,
+        "mean_absolute_count_error": 1.2258064516129032,
+        "exact_count_fraction": 0.6129032258064516,
+        "precision": 0.8701298701298701,
+        "recall": 0.907859078590786,
+        "f1": 0.8885941644562334,
+        "mean_absolute_count_error_by_exercise": {
+          "shoulder_abduction": 0.6923076923076923,
+          "sit_to_stand": 1.6111111111111112
+        }
+      },
+      "auto": {
+        "blocks": 31,
+        "blocks_skipped_no_calibration": 0,
+        "labelled_repetitions": 369,
+        "detected_repetitions": 385,
+        "matched": 335,
+        "mean_absolute_count_error": 1.1612903225806452,
+        "exact_count_fraction": 0.5483870967741935,
+        "precision": 0.8701298701298701,
+        "recall": 0.907859078590786,
+        "f1": 0.8885941644562334,
+        "mean_absolute_count_error_by_exercise": {
+          "shoulder_abduction": 0.5384615384615384,
+          "sit_to_stand": 1.6111111111111112
+        }
+      }
+    }
+  }
+}

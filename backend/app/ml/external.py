@@ -82,6 +82,44 @@ def _rf(seed: int) -> RandomForestClassifier:
     return RandomForestClassifier(n_estimators=200, class_weight="balanced", min_samples_leaf=5, random_state=seed, n_jobs=1)
 
 
+def _threshold_from_train(train: list[Row], feats: list[str], seed: int) -> float:
+    """Decision threshold on P(incorrect) chosen ONLY from the training dataset: out-of-fold probabilities from an inner
+    leave-one-participant-out loop, threshold maximising balanced accuracy (ties -> closest to 0.5)."""
+    people = sorted({str(r["participant_id"]) for r in train})
+    truth = _incorrect(train)
+    oof = np.full(len(train), np.nan)
+    for held in people:
+        tr = [i for i, r in enumerate(train) if r["participant_id"] != held]
+        te = [i for i, r in enumerate(train) if r["participant_id"] == held]
+        if len({truth[i] for i in tr}) < 2:
+            continue
+        m = _rf(seed).fit(_x([train[i] for i in tr], feats), [truth[i] for i in tr])
+        oof[te] = m.predict_proba(_x([train[i] for i in te], feats))[:, list(m.classes_).index(True)]
+    ok = ~np.isnan(oof)
+    if ok.sum() < 10 or len({truth[i] for i in np.where(ok)[0]}) < 2:
+        return 0.5
+    y = np.array(truth)[ok]
+    best, best_s = 0.5, -1.0
+    for t in np.round(np.arange(0.05, 0.96, 0.01), 2):
+        s = balanced_accuracy_score(y, oof[ok] >= t)
+        if s > best_s + 1e-9 or (abs(s - best_s) <= 1e-9 and abs(t - 0.5) < abs(best - 0.5)):
+            best, best_s = float(t), s
+    return best
+
+
+def _calibration(truth: list[bool], p: np.ndarray, bins: int = 10) -> dict:
+    """Brier score and expected calibration error of P(incorrect) on a dataset, plus mean predicted vs observed rate."""
+    y = np.array(truth, dtype=float)
+    edges = np.linspace(0, 1, bins + 1)
+    ece = 0.0
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        m = (p >= lo) & ((p < hi) if hi < 1 else (p <= hi))
+        if m.any():
+            ece += abs(p[m].mean() - y[m].mean()) * m.mean()
+    return {"brier": float(np.mean((p - y) ** 2)), "ece": float(ece), "mean_predicted_probability": float(p.mean()),
+            "observed_incorrect_rate": float(y.mean())}
+
+
 def external_validation(train: list[Row], test: list[Row], seed: int = 0, n_boot: int = 300,
                         full_features: bool = False) -> dict:
     """full_features=True also evaluates the complete feature set (head tilt, heel lift, MediaPipe 3D cues); only
@@ -98,10 +136,19 @@ def external_validation(train: list[Row], test: list[Row], seed: int = 0, n_boot
     preds: dict[str, list[bool]] = {"majority_class (train prior)": [Counter(_incorrect(train)).most_common(1)[0][0]] * len(test)}
     thr = _fit_range_thresholds(train)
     preds["range_rule (threshold from train)"] = [float(r["peak_progress"]) < thr[str(r["exercise_id"])] for r in test]
+    calibration: dict[str, dict] = {}
+    thresholds: dict[str, float] = {}
     for name, feats in feature_sets.items():
-        preds[f"rf_{name} (trained on train set)"] = list(_rf(seed).fit(_x(train, feats), _incorrect(train)).predict(_x(test, feats)))
+        model = _rf(seed).fit(_x(train, feats), _incorrect(train))
+        xte = _x(test, feats)
+        preds[f"rf_{name} (trained on train set)"] = list(model.predict(xte))
+        p_incorrect = model.predict_proba(xte)[:, list(model.classes_).index(True)]
+        thresholds[name] = _threshold_from_train(train, feats, seed)
+        preds[f"rf_{name} (threshold chosen on train participants)"] = [bool(v >= thresholds[name]) for v in p_incorrect]
+        calibration[name] = _calibration(truth, p_incorrect)
 
     out: dict = {"shared_exercises": shared, "n_train": len(train), "n_test": len(test),
+                 "decision_thresholds_from_train": thresholds, "probability_calibration_on_test": calibration,
                  "train_participants": sorted({str(r["participant_id"]) for r in train}),
                  "test_participants": sorted({str(r["participant_id"]) for r in test}),
                  "test_incorrect_fraction": float(np.mean(truth)), "range_thresholds_from_train": thr, "methods": {}}

@@ -1,0 +1,71 @@
+{
+  "kind": "angle",
+  "title": "Joint-angle accuracy: MediaPipe vs motion capture (REHAB24-6)",
+  "caveat": "Reference = optical motion capture projected to the camera image; definitional differences between mocap joint centres and MediaPipe landmarks are part of the error. 2D image-plane angles only.",
+  "data": {
+    "recordings": 31,
+    "recordings_skipped": 0,
+    "overall": {
+      "n": 49171,
+      "mae_deg": 8.024562506009008,
+      "rmse_deg": 14.242275627530331,
+      "bias_deg": -2.1429318733032945,
+      "loa95_deg": [
+        -29.740281027837117,
+        25.45441728123053
+      ],
+      "pearson_r": 0.9698605416469286
+    },
+    "by_exercise": {
+      "shoulder_abduction": {
+        "n": 28427,
+        "mae_deg": 8.921795506369657,
+        "rmse_deg": 17.16432696099771,
+        "bias_deg": -7.503090338045076,
+        "loa95_deg": [
+          -37.76120819662162,
+          22.755027520531467
+        ],
+        "pearson_r": 0.9589026811970064
+      },
+      "sit_to_stand": {
+        "n": 20744,
+        "mae_deg": 6.7950193850462135,
+        "rmse_deg": 8.779580050560998,
+        "bias_deg": 5.20248003747643,
+        "loa95_deg": [
+          -8.659257230946707,
+          19.064217305899568
+        ],
+        "pearson_r": 0.9817056923503031
+      }
+    },
+    "by_camera": {
+      "cam17": {
+        "n": 38659,
+        "mae_deg": 9.031305086177493,
+        "rmse_deg": 15.765405948273587,
+        "bias_deg": -3.190266316826494,
+        "loa95_deg": [
+          -33.4515740586074,
+          27.071041424954412
+        ],
+        "pearson_r": 0.9647610419747604
+      },
+      "cam18": {
+        "n": 10512,
+        "mae_deg": 4.322159404150791,
+        "rmse_deg": 5.895351203621488,
+        "bias_deg": 1.7087521308979428,
+        "loa95_deg": [
+          -9.350644172259056,
+          12.768148434054943
+        ],
+        "pearson_r": 0.9889601287814375
+      }
+    },
+    "best_lag_frames_median": 0,
+    "best_lag_frames_all_zero_fraction": 0.6129032258064516,
+    "note": "Reference = optical motion capture projected to the camera image; definitional differences between mocap joint centres and MediaPipe landmarks are part of the error. 2D image-plane angles only."
+  }
+}

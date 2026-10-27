@@ -63,24 +63,26 @@ Data: rehab26-zenodo-23018128 (CC BY-NC 4.0) | 1665 repetitions from 5 participa
 - peak3d_minus_2d_progress: 0.049
 - lr_angle_asym_mean_deg: 0.043
 
-Confusion matrix (Random forest, angle features, tuned; rows = true, cols = predicted; order: acceptable, insufficient_range, incomplete_repetition, too_fast, uncontrolled, insufficient_data, posture_deviation)
+Confusion matrix (Random forest, angle features, tuned; rows = true, cols = predicted; order: acceptable, insufficient_range, incomplete_repetition, too_fast, uncontrolled, insufficient_data, posture_deviation, incorrect_unspecified)
 ```
- 240  242    0    0    0    0  350
-  17   88    0    0    0    0    6
-   0    0    0    0    0    0    0
-   0    0    0    0    0    0    0
-   0    0    0    0    0    0    0
-   0    0    0    0    0    0    0
- 124  152    0    0    0    0  446
+ 240  242    0    0    0    0  350    0
+  17   88    0    0    0    0    6    0
+   0    0    0    0    0    0    0    0
+   0    0    0    0    0    0    0    0
+   0    0    0    0    0    0    0    0
+   0    0    0    0    0    0    0    0
+ 124  152    0    0    0    0  446    0
+   0    0    0    0    0    0    0    0
 ```
 
-Confusion matrix (Random forest, + posture features, tuned; rows = true, cols = predicted; order: acceptable, insufficient_range, incomplete_repetition, too_fast, uncontrolled, insufficient_data, posture_deviation)
+Confusion matrix (Random forest, + posture features, tuned; rows = true, cols = predicted; order: acceptable, insufficient_range, incomplete_repetition, too_fast, uncontrolled, insufficient_data, posture_deviation, incorrect_unspecified)
 ```
- 479   76    0    0    0    0  277
-  18   85    0    0    0    0    8
-   0    0    0    0    0    0    0
-   0    0    0    0    0    0    0
-   0    0    0    0    0    0    0
-   0    0    0    0    0    0    0
- 154   69    0    0    0    0  499
+ 479   76    0    0    0    0  277    0
+  18   85    0    0    0    0    8    0
+   0    0    0    0    0    0    0    0
+   0    0    0    0    0    0    0    0
+   0    0    0    0    0    0    0    0
+   0    0    0    0    0    0    0    0
+ 154   69    0    0    0    0  499    0
+   0    0    0    0    0    0    0    0
 ```
