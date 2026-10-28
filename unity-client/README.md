@@ -1,6 +1,6 @@
 # Unity client (optional)
 
-A Unity 6 (6000.0 LTS) desktop client for the ARVR backend: a 3D room, a virtual trainer, and a live HUD. It uses the **same backend and exercise data** as the web app (`WS /api/ws/analysis`, `POST /api/sessions`, `/complete`), so counting, quality assessment and the adaptive suggestion are identical.
+A Unity 6 (6000.6.7f1) desktop client for the ARVR backend: a 3D room, a virtual trainer, and a live HUD. It uses the **same backend and exercise data** as the web app (`WS /api/ws/analysis`, `POST /api/sessions`, `/complete`), so counting, quality assessment and the adaptive suggestion are identical.
 
 **Status: compiles with no errors on Unity 6000.6.7f1 (checked in batch mode, 2026-10-28), and a ready-made scene is included. Play mode has NOT been run yet** (that needs a person at the Editor), so treat runtime behaviour as untested until the checklist below is done. It does not need a headset; immersive VR (XR Plug-in / OpenXR) is not set up and has not been tested.
 
@@ -16,7 +16,7 @@ A Unity 6 (6000.0 LTS) desktop client for the ARVR backend: a 3D room, a virtual
 ## Run it
 1. Install Unity Hub and the Editor **6000.6.7f1** (the version this project is set to; Unity ID sign-in and a free Personal licence are done by you in the Hub).
 2. Unity Hub -> Add -> select this `unity-client` folder -> open it (first open imports packages and takes a few minutes).
-3. Create an empty scene, add an empty GameObject, and add the **RehabRoom** component (`Assets/Scripts/RehabRoom.cs`). Save the scene.
+3. Open `Assets/Scenes/RehabRoom.unity` (it already contains the **RehabRoom** component). To rebuild it, use the menu **ARVR > Create room scene**.
 4. Start the backend (`docs/installation.md`), then press Play and click **Start**.
 
 ## Checklist to mark it as verified
