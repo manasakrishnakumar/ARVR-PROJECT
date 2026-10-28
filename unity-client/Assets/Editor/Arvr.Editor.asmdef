@@ -1,0 +1,14 @@
+{
+  "name": "Arvr.Editor",
+  "rootNamespace": "Arvr.EditorTools",
+  "references": [ "Arvr.Runtime" ],
+  "includePlatforms": [ "Editor" ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -21,8 +21,18 @@ namespace Arvr
         {
             public string type, phase, label, feedback, explanation, detail;
             public int counted_reps, target_reps;
-            public float angle, progress, score;
-            public bool counted, saving;
+            public float angle, progress, score, start, target; // start/target: the calibrated range in a "calibrated" message
+            public bool counted, saving, calibrating;
+        }
+
+        /// <summary>The WebSocket URL for a session. calibrate=auto asks the backend to measure the user's own range first.</summary>
+        public static string BuildUrl(string httpBase, string exerciseId, int level, string sessionId = null, string key = null, bool calibrate = false)
+        {
+            var wsBase = httpBase.Replace("https://", "wss://").Replace("http://", "ws://").TrimEnd('/');
+            var url = $"{wsBase}/api/ws/analysis?exercise_id={Uri.EscapeDataString(exerciseId)}&difficulty={level}";
+            if (!string.IsNullOrEmpty(sessionId)) url += $"&session_id={Uri.EscapeDataString(sessionId)}&key={Uri.EscapeDataString(key ?? "")}";
+            if (calibrate) url += "&calibrate=auto";
+            return url;
         }
 
         readonly ConcurrentQueue<Msg> inbox = new ConcurrentQueue<Msg>();
@@ -34,11 +44,9 @@ namespace Arvr
         public string LastError { get; private set; }
         public bool TryDequeue(out Msg m) => inbox.TryDequeue(out m);
 
-        public async Task ConnectAsync(string httpBase, string exerciseId, int level, string sessionId = null, string key = null)
+        public async Task ConnectAsync(string httpBase, string exerciseId, int level, string sessionId = null, string key = null, bool calibrate = false)
         {
-            var wsBase = httpBase.Replace("https://", "wss://").Replace("http://", "ws://").TrimEnd('/');
-            var url = $"{wsBase}/api/ws/analysis?exercise_id={Uri.EscapeDataString(exerciseId)}&difficulty={level}";
-            if (!string.IsNullOrEmpty(sessionId)) url += $"&session_id={Uri.EscapeDataString(sessionId)}&key={Uri.EscapeDataString(key ?? "")}";
+            var url = BuildUrl(httpBase, exerciseId, level, sessionId, key, calibrate);
             cts = new CancellationTokenSource();
             ws = new ClientWebSocket();
             try

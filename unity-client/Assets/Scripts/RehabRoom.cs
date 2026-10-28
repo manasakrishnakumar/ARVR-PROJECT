@@ -4,12 +4,14 @@ using UnityEngine;
 namespace Arvr
 {
     /// <summary>
-    /// Desktop 3D rehabilitation room. Attach this single component to an empty GameObject in an empty scene and press Play:
-    /// it builds the room, a virtual trainer (elbow flexion), streams the angle to the ARVR backend, and shows the live results.
+    /// Desktop 3D rehabilitation room. Attach to an empty GameObject (the scene "Assets/Scenes/RehabRoom.unity" already does) and press Play.
     ///
-    /// Angle source: "Trainer demo" (synthetic sweep, flagged as a demo session) or a manual slider. This client does NOT do pose
-    /// estimation: connecting a real pose source (for example a MediaPipe Unity plugin, or a relay from the web app) is future work.
-    /// Research prototype; not a medical device.
+    /// Angle sources:
+    ///  - Trainer demo: a synthetic sweep between the exercise's illustrative start and target angles (sent as a DEMO session);
+    ///  - Manual slider: you set the angle;
+    ///  - Live from browser: the web app's 3D room page publishes your real webcam pose to a room code on the local backend
+    ///    and this client shows it (pose estimation stays in the browser; the browser also does the counting).
+    /// The backend, not Unity, counts repetitions and assesses quality. Research prototype; not a medical device.
     /// </summary>
     public class RehabRoom : MonoBehaviour
     {
@@ -17,22 +19,41 @@ namespace Arvr
         public string exerciseId = "elbow_flexion";
         public int level = 1;
         public float sendHz = 15f;
+        public bool calibrate = true;
 
-        enum Source { TrainerDemo, ManualSlider }
+        enum Source { TrainerDemo, ManualSlider, LiveFromBrowser }
         Source source = Source.TrainerDemo;
+        ExerciseApi.Exercise[] exercises = new ExerciseApi.Exercise[0];
+        int exerciseIndex;
         bool running;
-        float t0, lastSend, manualAngle = 160f, angle = 160f;
+        float t0, lastSend, manualProgress = 0f;
+        float angle = float.NaN;
+        string roomCode = "";
         AnalysisClient client;
+        RelayClient relay;
         SessionApi.Created session;
         SessionApi.Completed result;
-        string phase = "waiting", feedback = "", status = "Press Start.";
+        string phase = "waiting", feedback = "", status = "Press Start.", calibratedText = "";
         int reps, target;
-        Transform forearmPivot;
+        LandmarkFigure trainer, user;
+        Vector2 scroll;
 
-        void Start()
+        ExerciseApi.Exercise Current => exercises.Length > 0 ? exercises[Mathf.Clamp(exerciseIndex, 0, exercises.Length - 1)] : null;
+
+        IEnumerator Start()
         {
             BuildRoom();
-            BuildTrainer();
+            trainer = new LandmarkFigure("Trainer", new Color(0.98f, 0.75f, 0.14f));
+            user = new LandmarkFigure("You", new Color(0.18f, 0.83f, 0.75f));
+            yield return ExerciseApi.Load(backendUrl, e => exercises = e);
+            if (exercises.Length == 0)
+            {
+                // the backend is not up yet: keep the room usable with the default exercise
+                exercises = new[] { new ExerciseApi.Exercise { id = "elbow_flexion", name = "Elbow flexion",
+                    landmarks = new[] { "LEFT_SHOULDER", "LEFT_ELBOW", "LEFT_WRIST" }, start_angle_deg = 160, target_angle_deg = 50 } };
+                status = "Backend not reachable: using the built-in elbow flexion. Start the backend and press Play again for all exercises.";
+            }
+            exerciseIndex = Mathf.Max(0, System.Array.FindIndex(exercises, x => x.id == exerciseId));
         }
 
         void BuildRoom()
@@ -47,50 +68,42 @@ namespace Arvr
             var light = new GameObject("Light").AddComponent<Light>();
             light.type = LightType.Directional;
             light.transform.rotation = Quaternion.Euler(50, -30, 0);
-            Camera.main.transform.position = new Vector3(0, 1.4f, -2.2f);
-            Camera.main.transform.LookAt(new Vector3(0, 1.2f, 0));
+            Camera.main.transform.position = new Vector3(0, 1.3f, -3.6f);
+            Camera.main.transform.LookAt(new Vector3(0, 1.0f, 0));
         }
 
-        /// <summary>Torso, a fixed upper arm hanging from the shoulder, and a forearm that pivots at the elbow.</summary>
-        void BuildTrainer()
-        {
-            var torso = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            torso.transform.position = new Vector3(0, 1.2f, 0);
-            torso.transform.localScale = new Vector3(0.35f, 0.45f, 0.2f);
-            torso.GetComponent<Renderer>().material.color = new Color(0.98f, 0.75f, 0.14f);
-            var upper = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            upper.transform.position = new Vector3(0.3f, 1.2f, 0);
-            upper.transform.localScale = new Vector3(0.09f, 0.25f, 0.09f);
-            upper.GetComponent<Renderer>().material.color = new Color(0.98f, 0.75f, 0.14f);
-            var elbow = new GameObject("ElbowPivot").transform;
-            elbow.position = new Vector3(0.3f, 0.95f, 0);
-            forearmPivot = elbow;
-            var fore = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            fore.transform.SetParent(elbow, false);
-            fore.transform.localPosition = new Vector3(0, 0.22f, 0); // the forearm points up from the pivot at angle 0
-            fore.transform.localScale = new Vector3(0.08f, 0.22f, 0.08f);
-            fore.GetComponent<Renderer>().material.color = new Color(0.18f, 0.83f, 0.75f);
-            ApplyAngle(angle);
-        }
-
-        /// <summary>Elbow angle = angle between the upper arm (up from the elbow) and the forearm. 180 is straight.</summary>
-        void ApplyAngle(float deg) => forearmPivot.localRotation = Quaternion.Euler(0, 0, 180f - deg);
+        string Side => "LEFT";
 
         IEnumerator StartSession()
         {
+            var ex = Current;
+            if (ex == null) yield break;
+            result = null; reps = 0; target = 0; calibratedText = ""; feedback = ""; phase = "waiting"; angle = float.NaN;
+            if (source == Source.LiveFromBrowser)
+            {
+                if (string.IsNullOrWhiteSpace(roomCode)) { status = "Type the room code shown on the web app's 3D room page."; yield break; }
+                relay = new RelayClient();
+                var rtask = relay.ConnectAsync(backendUrl, roomCode.Trim().ToUpperInvariant());
+                while (!rtask.IsCompleted) yield return null;
+                status = relay.Connected ? "Connected. Start the camera on the web page and move." : $"Could not join the room ({relay.LastError}).";
+                running = relay.Connected;
+                yield break;
+            }
             status = "Creating session...";
-            yield return SessionApi.Create(backendUrl, exerciseId, level, source == Source.TrainerDemo, s => session = s);
+            yield return SessionApi.Create(backendUrl, ex.id, level, true, s => session = s); // synthetic input: always a demo session
             client = new AnalysisClient();
-            var task = client.ConnectAsync(backendUrl, exerciseId, level, session?.id, session?.ws_key);
+            var task = client.ConnectAsync(backendUrl, ex.id, level, session?.id, session?.ws_key, calibrate);
             while (!task.IsCompleted) yield return null;
-            status = client.Connected ? "Streaming to the backend." : $"Backend not reachable ({client.LastError}); the room still runs.";
-            result = null; reps = 0; t0 = Time.time; running = true;
+            status = client.Connected ? (calibrate ? "Streaming. Calibrating to the range you move in (about 5 seconds)." : "Streaming to the backend.")
+                                      : $"Backend not reachable ({client.LastError}); the room still runs.";
+            t0 = Time.time; running = true;
         }
 
         IEnumerator StopSession()
         {
             running = false;
             client?.Dispose(); client = null;
+            relay?.Dispose(); relay = null;
             if (session != null && reps > 0) yield return SessionApi.Complete(backendUrl, session.id, c => result = c);
             session = null;
             status = "Stopped.";
@@ -98,14 +111,34 @@ namespace Arvr
 
         void Update()
         {
-            if (!running) return;
+            var ex = Current;
+            if (ex == null) return;
+            // the trainer always shows the exercise's illustrative movement
+            trainer.Apply(PoseMath.Trainer(ex.landmarks, ex.start_angle_deg, ex.target_angle_deg, Side, PoseMath.Progress01(Time.time)), -1.1f);
+            if (!running) { user.SetVisible(false); return; }
+
+            if (source == Source.LiveFromBrowser)
+            {
+                if (relay != null && relay.TryGetLatest(out var f))
+                {
+                    user.Apply(PoseMath.FromFlat(f.lm), 1.1f);
+                    angle = f.has_angle ? f.angle : float.NaN;
+                    phase = f.phase; reps = f.counted_reps; target = f.target_reps;
+                    if (!string.IsNullOrEmpty(f.feedback)) feedback = $"{f.label}: {f.feedback}";
+                }
+                if (relay != null && !relay.Connected) status = $"Relay disconnected ({relay.LastError}).";
+                return;
+            }
+
             var t = Time.time - t0;
-            angle = source == Source.TrainerDemo ? 105f + 55f * Mathf.Cos(2f * Mathf.PI * t / 4f) : manualAngle; // 50..160 degrees
-            ApplyAngle(angle);
+            float progress = source == Source.TrainerDemo ? PoseMath.Progress01(t) : manualProgress;
+            angle = ex.start_angle_deg + progress * (ex.target_angle_deg - ex.start_angle_deg);
+            user.Apply(PoseMath.Trainer(ex.landmarks, ex.start_angle_deg, ex.target_angle_deg, Side, progress), 1.1f);
             if (client != null && Time.time - lastSend >= 1f / sendHz) { lastSend = Time.time; client.Send(t, angle); }
             while (client != null && client.TryDequeue(out var m))
             {
                 if (m.type == "hello") target = m.target_reps;
+                else if (m.type == "calibrated") { calibratedText = $"Calibrated range: {m.start:F0}° to {m.target:F0}° (what you demonstrated, not a target)."; status = "Streaming to the backend."; }
                 else if (m.type == "state") { phase = m.phase; reps = m.counted_reps; }
                 else if (m.type == "rep") feedback = $"{m.label} ({m.score:F2}): {m.feedback}";
                 else if (m.type == "error") status = m.detail;
@@ -114,20 +147,37 @@ namespace Arvr
 
         void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(12, 12, 420, 520), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(12, 12, 470, Screen.height - 24), GUI.skin.box);
             GUILayout.Label("ARVR 3D room (research prototype, not a medical device)");
-            GUILayout.Label($"{exerciseId}  ·  level {level}  ·  backend {backendUrl}");
+            var ex = Current;
             if (!running)
             {
-                source = (Source)GUILayout.Toolbar((int)source, new[] { "Trainer demo (synthetic)", "Manual slider" });
+                GUILayout.Label("Exercise:");
+                scroll = GUILayout.BeginScrollView(scroll, GUILayout.Height(84));
+                var names = new string[exercises.Length];
+                for (int i = 0; i < names.Length; i++) names[i] = exercises[i].name;
+                exerciseIndex = GUILayout.SelectionGrid(exerciseIndex, names, 2);
+                GUILayout.EndScrollView();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Level:");
+                for (int l = 1; l <= 3; l++) if (GUILayout.Toggle(level == l, l.ToString(), GUI.skin.button, GUILayout.Width(40))) level = l;
+                calibrate = GUILayout.Toggle(calibrate, "Calibrate to my range");
+                GUILayout.EndHorizontal();
+                source = (Source)GUILayout.Toolbar((int)source, new[] { "Trainer demo", "Manual slider", "Live from browser" });
+                if (source == Source.LiveFromBrowser)
+                {
+                    GUILayout.BeginHorizontal(); GUILayout.Label("Room code:"); roomCode = GUILayout.TextField(roomCode, 12); GUILayout.EndHorizontal();
+                }
                 if (GUILayout.Button("Start")) StartCoroutine(StartSession());
             }
             else
             {
-                if (source == Source.ManualSlider) manualAngle = GUILayout.HorizontalSlider(manualAngle, 40f, 180f);
+                if (source == Source.ManualSlider) manualProgress = GUILayout.HorizontalSlider(manualProgress, 0f, 1f);
                 if (GUILayout.Button("Stop and save")) StartCoroutine(StopSession());
             }
-            GUILayout.Label($"Repetitions: {reps} / {(target > 0 ? target.ToString() : "-")}   Phase: {phase}   Angle: {angle:F0}°");
+            GUILayout.Label($"{ex?.name}  ·  level {level}  ·  {backendUrl}");
+            GUILayout.Label($"Repetitions: {reps} / {(target > 0 ? target.ToString() : "-")}   Phase: {phase}   Angle: {(float.IsNaN(angle) ? "n/a" : angle.ToString("F0") + "°")}");
+            if (!string.IsNullOrEmpty(calibratedText)) GUILayout.Label(calibratedText);
             GUILayout.Label(feedback);
             GUILayout.Label(status);
             if (result?.recommendation != null)
@@ -140,6 +190,6 @@ namespace Arvr
             GUILayout.EndArea();
         }
 
-        void OnDestroy() => client?.Dispose();
+        void OnDestroy() { client?.Dispose(); relay?.Dispose(); }
     }
 }
