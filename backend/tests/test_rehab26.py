@@ -46,7 +46,7 @@ def root(tmp_path):
 def test_participant_names_from_the_dataset_never_reach_the_output(root):
     rows, _ = import_rehab26(root)
     assert {r["participant_id"] for r in rows} == {"R26-P1", "R26-P2", "R26-P3"}
-    assert all(re.fullmatch(r"R26-Pd+", r["participant_id"]) for r in rows)  # only pseudonyms in the output
+    assert all(re.fullmatch(r"R26-P[0-9]+", r["participant_id"]) for r in rows)  # only pseudonyms in the output
 
 
 def test_label_mapping_and_camera_choice():
