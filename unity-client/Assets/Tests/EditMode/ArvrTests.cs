@@ -77,6 +77,16 @@ namespace Arvr.Tests
         }
     }
 
+    public class XrTests
+    {
+        [Test]
+        public void XrStatus_SaysDesktopModeWhenNoHeadsetIsActive()
+        {
+            Assert.IsFalse(XrStatus.Active);            // edit mode: no XR device
+            StringAssert.Contains("no headset", XrStatus.Describe());
+        }
+    }
+
     public class ProtocolTests
     {
         [Test]

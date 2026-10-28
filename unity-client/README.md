@@ -16,7 +16,8 @@ Research prototype, not a medical device.
 
 ## What it does not do
 - No pose estimation inside Unity (that would need a plugin such as MediaPipe for Unity): real pose comes through the browser relay.
-- No accounts or charts (use the web app), and **no VR/XR**: immersive VR is not set up and no headset has been tested.
+- No accounts or charts (use the web app).
+- **VR is prepared but NOT tested**: the OpenXR packages are installed and the HUD reports XR status, but XR is switched off and no headset has been used. See *Enabling VR* below.
 
 ## Run it
 1. Install Unity Hub and Editor **6000.6.7f1**; sign in and activate the free Personal licence in the Hub.
@@ -24,6 +25,9 @@ Research prototype, not a medical device.
 3. Open `Assets/Scenes/RehabRoom.unity` (menu **ARVR > Create room scene** rebuilds it).
 4. Start the backend (`docs/installation.md`), press **Play**, pick an exercise and a source, click **Start**.
 5. For *Live from browser*: in the web app open **3D room**, tick **Share live pose**, start the camera there, then type the room code in Unity and click **Start**.
+
+## Enabling VR (untested: no headset was available)
+The project includes `com.unity.xr.management` and `com.unity.xr.openxr`. To try a headset: Edit > Project Settings > XR Plug-in Management > Windows tab > tick **OpenXR**, add your headset's interaction profile under OpenXR, start the headset's OpenXR runtime (for example SteamVR or the Meta/Windows Mixed Reality app), then press Play. The HUD line shows `XR device active` when it works. The room currently uses a fixed camera, so a proper XR rig (head-tracked camera, hand controllers for the Start button) still has to be added and tested on real hardware; the IMGUI buttons are desktop-only.
 
 ## Tests and builds (batch mode, no window needed; close the Editor first)
 ```powershell

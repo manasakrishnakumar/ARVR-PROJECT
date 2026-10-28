@@ -107,7 +107,8 @@
 - [x] **Verified headlessly**: compiles with no errors; **14 Unity edit-mode tests pass** (pose maths, trainer poses for 4 joint types on both sides, message/URL/relay-frame parsing, exercise-list parsing); batch build script `ARVR > Build Windows player` produced a Windows player (ARVR-Unity.exe, git-ignored) that ran headless for 12 s without crashing (its only log error was the expected backend-unreachable message).
 - [x] **Verified by the user in the Editor (earlier version of the room, 2026-10-28)**: Play mode, counting, suggestion, backend-off message. The newer features (exercise picker, live-from-browser, calibration toggle) have NOT been tried by hand in Play mode.
 - [x] **Local pose relay** (backend/app/api/relay.py, `WS /api/ws/relay/{room}`) + "Share live pose" panel in the web 3D room: the browser publishes landmark NUMBERS (no video/images) to a room code; Unity subscribes. In-memory only, validated frames (size, 33 finite landmarks), room/subscriber/publisher limits, 11 backend tests, 3 frontend tests. Single-user local use only; do not expose to the internet.
-- [ ] Not done: immersive VR/XR in Unity (no headset to test), pose estimation inside Unity, Unity accounts/charts.
+- [x] **VR prepared, not tested**: OpenXR packages (xr.management 4.6.1, xr.openxr 1.19.0) installed, HUD reports XR status; project still compiles and **15 Unity tests pass**. XR is off by default; a head-tracked rig and controller UI are not built.
+- [ ] Not done: tested immersive VR (no headset), pose estimation inside Unity, Unity accounts/charts.
 
 ## Later phases: not started
 Pose estimation, angles, repetition counter, assessment, ML, adaptation, dashboard, AR, 3D, evaluation.

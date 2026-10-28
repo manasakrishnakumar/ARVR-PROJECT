@@ -175,7 +175,7 @@ namespace Arvr
                 if (source == Source.ManualSlider) manualProgress = GUILayout.HorizontalSlider(manualProgress, 0f, 1f);
                 if (GUILayout.Button("Stop and save")) StartCoroutine(StopSession());
             }
-            GUILayout.Label($"{ex?.name}  ·  level {level}  ·  {backendUrl}");
+            GUILayout.Label($"{ex?.name}  ·  level {level}  ·  {backendUrl}  ·  {XrStatus.Describe()}");
             GUILayout.Label($"Repetitions: {reps} / {(target > 0 ? target.ToString() : "-")}   Phase: {phase}   Angle: {(float.IsNaN(angle) ? "n/a" : angle.ToString("F0") + "°")}");
             if (!string.IsNullOrEmpty(calibratedText)) GUILayout.Label(calibratedText);
             GUILayout.Label(feedback);
