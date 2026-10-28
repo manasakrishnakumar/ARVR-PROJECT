@@ -1,5 +1,5 @@
 import type {
-  AdaptationState, AnalyticsSummary, CompleteOut, Exercise, Filters, Health, ProgressPoint, Recommendation,
+  AdaptationState, AnalyticsSummary, WeeklySummary, CompleteOut, Exercise, Filters, Health, ProgressPoint, Recommendation,
   ResearchResult, SessionCreated, SessionDetail, User,
 } from "../types/api";
 
@@ -66,6 +66,29 @@ export const api = {
   summary: (f: Filters = {}) => request<AnalyticsSummary>(`/api/analytics/summary${query(f)}`),
   sessionDetail: (id: string) => request<SessionDetail>(`/api/sessions/${encodeURIComponent(id)}/detail`),
   researchResults: () => request<{ results: ResearchResult[]; note: string }>("/api/research/results"),
+
+  weekly: () => request<WeeklySummary>("/api/analytics/weekly"),
+
+  /** Downloads everything stored about the user's real sessions as one JSON file. */
+  async backup(): Promise<void> {
+    const headers = new Headers();
+    const token = tokenStore.get();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    const res = await fetch("/api/me/backup", { headers });
+    if (!res.ok) throw new ApiError(res.status, `Backup failed (${res.status})`);
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "arvr-backup.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+  /** Restores sessions from a backup file; sessions that already exist are skipped. */
+  async restore(file: File): Promise<{ added: number; skipped: number }> {
+    let data: unknown;
+    try { data = JSON.parse(await file.text()); } catch { throw new ApiError(422, "That file is not a valid backup (not JSON)."); }
+    return post<{ added: number; skipped: number }>("/api/me/restore", data);
+  },
 
   /** Downloads the user's own CSV (needs the auth header, so it goes through fetch rather than a plain link). */
   async exportCsv(kind: "sessions" | "repetitions", f: Filters = {}): Promise<void> {

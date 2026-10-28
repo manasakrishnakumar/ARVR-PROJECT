@@ -120,7 +120,17 @@ export interface RepDetail {
   duration_s: number | null;
 }
 
+export interface WeeklySummary {
+  sessions_last_7_days: number;
+  counted_repetitions_last_7_days: number;
+  day_streak: number;
+  active_days_last_7: number;
+  note: string;
+}
+
 export interface SessionDetail {
+  pain?: number | null;
+  note?: string | null;
   id: string;
   exercise_id: string;
   is_demo: boolean;

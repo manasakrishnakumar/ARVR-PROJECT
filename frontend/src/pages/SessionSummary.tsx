@@ -30,6 +30,9 @@ export default function SessionSummary() {
         {s.exercise_id.replace("_", " ")} · level {s.difficulty} · {new Date(s.started_at).toLocaleString()}
         {s.is_demo && " · SYNTHETIC DEMO (not a real person; never saved to a history)"}
       </p>
+      {(s.pain != null || s.note) && (
+        <p>{s.pain != null && <>Reported pain: <strong>{s.pain}/10</strong>. </>}{s.note && <>Note: {s.note}</>}</p>
+      )}
       {!m && <p className="notice">This session was not completed, so there is no summary.</p>}
       {m && (
         <div className="stats-grid">
@@ -73,7 +76,8 @@ export default function SessionSummary() {
           </div>
         )}
       </section>
-      <div className="row"><Link className="btn" to="/session">New session</Link><Link className="btn" to="/dashboard">Dashboard</Link></div>
+      <p className="muted print-only">Printed from ARVR, a research prototype and not a medical device. Scores are experimental system metrics, not validated medical outcomes. Share with your rehabilitation professional if you wish; it is not a clinical report.</p>
+      <div className="row no-print"><button onClick={() => window.print()}>Print or save as PDF</button><Link className="btn" to="/session">New session</Link><Link className="btn" to="/dashboard">Dashboard</Link></div>
     </>
   );
 }

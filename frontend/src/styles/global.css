@@ -107,3 +107,13 @@ html[data-contrast="high"] a { color: #ffe600; }
 html[data-contrast="high"] :focus-visible, :focus-visible { outline: 3px solid #ffe600; outline-offset: 2px; }
 .checkin { display: grid; gap: 8px; margin: 12px 0; }
 .checkin label { display: grid; gap: 4px; }
+
+/* printable session report */
+.print-only { display: none; }
+@media print {
+  .topbar, .banner, .footer, .skip, .no-print, .a11y { display: none !important; }
+  .print-only { display: block; }
+  body, :root { background: #fff !important; color: #000 !important; }
+  .card { box-shadow: none; border: 1px solid #999; break-inside: avoid; }
+  .page { max-width: none; padding: 0; }
+}

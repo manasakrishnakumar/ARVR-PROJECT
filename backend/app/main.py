@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import adaptation, analytics, auth, relay, research, sessions
+from app.api import adaptation, analytics, auth, mydata, relay, research, sessions
 from app.api.routes import router
 from app.core.config import settings
 from app.core.ratelimit import RateLimitMiddleware
@@ -19,5 +19,5 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title=settings.app_name, version=settings.version, lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_methods=["*"], allow_headers=["*"])
 app.add_middleware(RateLimitMiddleware)
-for r in (router, auth.router, sessions.router, adaptation.router, analytics.router, research.router, relay.router):
+for r in (router, auth.router, sessions.router, adaptation.router, analytics.router, research.router, relay.router, mydata.router):
     app.include_router(r)

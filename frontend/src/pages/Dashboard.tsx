@@ -4,7 +4,7 @@ import { Bars, ChartCard, TrendLines } from "../components/Charts";
 import { useAuth } from "../context/AuthContext";
 import { useExercises } from "../hooks/useExercises";
 import { api } from "../services/api";
-import type { AnalyticsSummary, Filters, ProgressPoint } from "../types/api";
+import type { AnalyticsSummary, Filters, ProgressPoint, WeeklySummary } from "../types/api";
 
 const ERR_LABEL: Record<string, string> = {
   insufficient_range: "Range short", incomplete_repetition: "Incomplete", too_fast: "Too fast", uncontrolled: "Uncontrolled",
@@ -19,6 +19,11 @@ export default function Dashboard() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [weekly, setWeekly] = useState<WeeklySummary | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    Promise.resolve().then(() => api.weekly()).then(setWeekly).catch(() => setWeekly(null)); // optional extra: the page works without it
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -90,6 +95,12 @@ export default function Dashboard() {
             <div className="card stat"><span className="muted">Average score (0-1)</span><strong>{summary.average_quality_score != null ? summary.average_quality_score.toFixed(2) : "n/a"}</strong></div>
             <div className="card stat"><span className="muted">Time exercising</span><strong>{fmtDur(summary.total_duration_s)}</strong></div>
           </div>
+          {weekly && (
+            <p className="muted" role="note">
+              Last 7 days: {weekly.sessions_last_7_days} session{weekly.sessions_last_7_days === 1 ? "" : "s"} on {weekly.active_days_last_7} day{weekly.active_days_last_7 === 1 ? "" : "s"},
+              {" "}{weekly.counted_repetitions_last_7_days} repetitions. Current run: {weekly.day_streak} day{weekly.day_streak === 1 ? "" : "s"} in a row. {weekly.note}
+            </p>
+          )}
           <div className="grid2">
             <ChartCard title="Score and flagged repetitions" description="Per session; higher score and lower flagged share are better.">
               <TrendLines data={data} domain={[0, 1]} lines={[{ key: "quality", name: "Average score", color: "var(--c1)" }, { key: "flagged", name: "Flagged share", color: "var(--c4)" }]} />

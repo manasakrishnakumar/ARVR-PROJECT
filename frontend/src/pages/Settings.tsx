@@ -77,6 +77,19 @@ export default function Settings() {
               <button onClick={() => run(() => api.exportCsv("sessions"), "Sessions CSV downloaded.")}>Download sessions (CSV)</button>
               <button onClick={() => run(() => api.exportCsv("repetitions"), "Repetitions CSV downloaded.")}>Download repetitions (CSV)</button>
             </div>
+            <h3>Backup and restore</h3>
+            <p className="muted">One JSON file with all your saved sessions, repetitions and suggestions (no password, no video). Restoring adds sessions that are not already here and never duplicates or overwrites anything.</p>
+            <div className="row">
+              <button onClick={() => run(() => api.backup(), "Backup downloaded.")}>Download backup (JSON)</button>
+              <label>Restore from a backup file{" "}
+                <input type="file" accept="application/json,.json" aria-label="Backup file to restore" onChange={(e) => {
+                  const f = e.target.files?.[0]; e.target.value = "";
+                  if (!f) return;
+                  setMsg(null); setError(null);
+                  api.restore(f).then((r) => setMsg(`Restored: ${r.added} added, ${r.skipped} already present.`)).catch((err: Error) => setError(err.message));
+                }} />
+              </label>
+            </div>
             <h3>Adaptive difficulty</h3>
             <p className="muted">Reset an exercise to the safe default level. Your session history stays; the next suggestion starts from the default.</p>
             <div className="row">
