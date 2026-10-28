@@ -10,6 +10,7 @@ All numbers are **preliminary, non-clinical** and come from the aggregate files 
 | Same, with the app's own pose pipeline | MediaPipe on the REHAB24-6 videos | see report | external-like-for-like.json |
 | In-domain reference | leave-one-participant-out, REHAB26 | balanced accuracy about 0.72 | lopo-rehab26.json |
 | Are the probabilities trustworthy? | Brier score, calibration error | over-confident: mean predicted 0.70 vs 0.40 observed | external-mocap.json |
+| How fast is the backend? | analysis cost and WebSocket round trip, in-process, one computer | analysis about 4 microseconds per sample; round trip mean 0.76 ms, 99th percentile 1.5 ms (budget: 66 ms per sample); excludes network and browser pose estimation | performance.json |
 | Does the adaptive controller behave safely? | Simulation with made-up user models | bounded, no unsafe increases; says nothing about benefit to real people | adaptive-simulation.json |
 
 ## Reading these honestly

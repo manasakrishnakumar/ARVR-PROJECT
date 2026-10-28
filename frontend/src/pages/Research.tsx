@@ -147,6 +147,23 @@ function AngleView({ d }: { d: any }) { // eslint-disable-line @typescript-eslin
   );
 }
 
+function PerformanceView({ d }: { d: any }) { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const rows: [string, any][] = [["Analysis cost per angle sample", d.analysis_cost_per_sample], ["WebSocket round trip (in-process)", d.websocket_round_trip]]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  return (
+    <>
+      <div className="table-wrap">
+        <table className="angles">
+          <thead><tr><th>Measurement</th><th>Samples</th><th>Mean (ms)</th><th>95th pct (ms)</th><th>99th pct (ms)</th><th>Max (ms)</th></tr></thead>
+          <tbody>{rows.map(([name, m]) => (
+            <tr key={name}><td>{name}</td><td>{m.samples ?? m.messages}</td><td>{m.mean_ms.toFixed(3)}</td><td>{m.p95_ms.toFixed(3)}</td><td>{m.p99_ms.toFixed(3)}</td><td>{m.max_ms.toFixed(3)}</td></tr>
+          ))}</tbody>
+        </table>
+      </div>
+      <p className="muted">The browser sends one angle about every {d.budget.sample_interval_ms} ms; the 99th-percentile round trip is {d.within_budget ? "well inside" : "NOT inside"} that interval. Browser pose-estimation speed is not included.</p>
+    </>
+  );
+}
+
 function SimulationView({ d }: { d: any }) { // eslint-disable-line @typescript-eslint/no-explicit-any
   return (
     <>
@@ -199,6 +216,7 @@ export default function Research() {
             : r.kind === "counting" ? <CountingView d={r.data} />
             : r.kind === "angle" ? <AngleView d={r.data} />
             : r.kind === "simulation" ? <SimulationView d={r.data} />
+            : r.kind === "performance" ? <PerformanceView d={r.data} />
             : <MethodsView d={r.data} kind={r.kind} />}
         </section>
       ))}

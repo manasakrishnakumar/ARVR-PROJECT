@@ -132,3 +132,15 @@ describe("Settings backup and restore", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Unsupported backup version 2");
   });
 });
+
+describe("Research page performance result", () => {
+  it("renders the performance table with its caveat", async () => {
+    const m = { mean_ms: 0.004, p95_ms: 0.005, p99_ms: 0.03, max_ms: 0.16 };
+    vi.mocked(api.researchResults).mockResolvedValue({ note: "", results: [{ id: "performance", kind: "performance", title: "Backend performance", caveat: "Excludes the browser.",
+      data: { analysis_cost_per_sample: { samples: 20000, ...m }, websocket_round_trip: { messages: 600, ...m }, budget: { sample_interval_ms: 66 }, within_budget: true } }] } as never);
+    wrap(<Research />);
+    expect(await screen.findByText("Backend performance")).toBeInTheDocument();
+    expect(screen.getByText("Excludes the browser.")).toBeInTheDocument();
+    expect(screen.getByText(/well inside/)).toBeInTheDocument();
+  });
+});

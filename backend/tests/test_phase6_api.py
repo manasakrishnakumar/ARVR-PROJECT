@@ -79,3 +79,12 @@ def test_committed_result_files_are_valid_results_documents():
     for d in docs:
         assert {"kind", "title", "caveat", "data"} <= set(d)
         assert "participant_id" not in json.dumps(d)  # aggregate metrics only: no per-person rows
+
+
+def test_perf_run_produces_the_documented_structure_quickly():
+    from app.ml import perf
+
+    a = perf.analysis_cost(n=500)
+    w = perf.websocket_roundtrip(n=60)
+    assert a["samples"] == 500 and 0 <= a["mean_ms"] <= a["p99_ms"] <= a["max_ms"]
+    assert w["messages"] == 60 and w["p95_ms"] >= w["mean_ms"] * 0.5 and w["max_ms"] >= w["p99_ms"]

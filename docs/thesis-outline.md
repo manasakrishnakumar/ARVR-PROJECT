@@ -1,5 +1,7 @@
 # M.Tech thesis outline (suggested)
 
+A working draft of Chapters 1 and 3-8 with the real results is in `docs/thesis-draft.md` (Chapter 2 must be written from sources you verify).
+
 Title: *An AI-Driven Adaptive AR/VR Framework for Personalized Rehabilitation Using Vision-Based Human Pose Estimation*
 (Be accurate about scope in the thesis: the implemented system is a **desktop/web, camera-only adaptive rehabilitation framework**; AR/VR presentation modes are proposed extensions unless you build and test them.)
 

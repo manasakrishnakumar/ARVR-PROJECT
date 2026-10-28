@@ -75,8 +75,18 @@ def main() -> None:
     lo.add_argument("--seed", type=int, default=0)
     lo.add_argument("--report", type=Path, default=None)
     lo.add_argument("--json", type=Path, default=None, help="also write aggregate results as JSON (used by the research page)")
+    pf = sub.add_parser("perf", help="measure backend analysis cost and WebSocket round trip on this computer")
+    pf.add_argument("--json", type=Path, default=None)
     a = ap.parse_args()
 
+    if a.cmd == "perf":
+        from app.ml.perf import run_perf
+
+        res = run_perf()
+        print(json.dumps(res, indent=2))
+        if a.json:
+            a.json.write_text(json.dumps(res, indent=2), encoding="utf-8")
+        return
     if a.cmd == "import-rehab26":
         rows, stats = import_rehab26(a.root, aspect=a.aspect)
         out = a.out or a.root / "reps.csv"

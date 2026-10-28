@@ -1,0 +1,31 @@
+{
+  "kind": "performance",
+  "title": "Backend performance (analysis cost and WebSocket round trip)",
+  "caveat": "Measured on one computer with the in-process test client: excludes the real network and the browser's pose estimation. Browser frame rate and end-to-end latency need a real camera and were not measured here.",
+  "machine": {
+    "python": "3.10.11",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "processor": "AMD64 Family 25 Model 117 Stepping 2, AuthenticAMD"
+  },
+  "data": {
+    "analysis_cost_per_sample": {
+      "samples": 20000,
+      "mean_ms": 0.003942525000275055,
+      "p95_ms": 0.005099998816149309,
+      "p99_ms": 0.03310000101919286,
+      "max_ms": 0.16370000048482325
+    },
+    "websocket_round_trip": {
+      "messages": 600,
+      "mean_ms": 0.7593988333731735,
+      "p95_ms": 1.195600001665298,
+      "p99_ms": 1.5020000009826617,
+      "max_ms": 4.6065999995335005
+    },
+    "budget": {
+      "sample_interval_ms": 66,
+      "note": "the browser sends one angle about every 66 ms (15 Hz)"
+    },
+    "within_budget": true
+  }
+}

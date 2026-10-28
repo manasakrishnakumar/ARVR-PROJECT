@@ -131,5 +131,9 @@
 - [x] **General API rate limiting** (300/min per address) and **Docker files** (`docker-compose.yml`; written, **not built or run**: the Docker engine was not running).
 - [x] Tests now: 199 backend + 66 frontend + 15 Unity edit-mode (280); the frontend builds.
 
+## Phase 9b - Performance measurement and thesis draft
+- [x] `python -m app.ml.cli perf`: backend analysis cost (about 4 microseconds per angle sample) and WebSocket round trip (mean 0.76 ms, p99 1.5 ms) measured and written to `docs/results/performance.json`, shown on the Research page. In-process test client on one computer: excludes the network and the browser's pose estimation, which need a camera and were **not measured**. 1 backend test, 1 frontend test.
+- [x] `docs/thesis-draft.md`: working draft of the abstract and chapters 1, 3-8 and appendices from the measured results; chapter 2 (literature) intentionally left for verified sources.
+
 ## Still not done
 Tested immersive VR (no headset), real-camera/phone verification of the AR page, hands-on Unity Play-mode check of the newer features, clinician review, any study with people, HTTPS, Playwright end-to-end tests, LSTM/GRU baseline, Docker build.
