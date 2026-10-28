@@ -1,0 +1,62 @@
+{
+  "hysteresis_deg": 8.0,
+  "min_rep_duration_s": 1.0,
+  "illustrative_only": true,
+  "phases": [
+    {
+      "name": "rest",
+      "description": "Start position"
+    },
+    {
+      "name": "moving_out",
+      "description": "Lift the leg out to the side"
+    },
+    {
+      "name": "target",
+      "description": "Hold near target"
+    },
+    {
+      "name": "returning",
+      "description": "Lower the leg slowly"
+    }
+  ],
+  "difficulty_levels": {
+    "1": {
+      "target_reps": 5,
+      "range_fraction": 0.6,
+      "min_rep_duration_s": 1.5
+    },
+    "2": {
+      "target_reps": 8,
+      "range_fraction": 0.75,
+      "min_rep_duration_s": 1.2
+    },
+    "3": {
+      "target_reps": 10,
+      "range_fraction": 0.9,
+      "min_rep_duration_s": 1.0
+    }
+  },
+  "id": "hip_abduction",
+  "name": "Hip abduction (standing)",
+  "target_joints": [
+    "hip"
+  ],
+  "landmarks": [
+    "LEFT_SHOULDER",
+    "LEFT_HIP",
+    "LEFT_KNEE"
+  ],
+  "start_angle_deg": 176,
+  "target_angle_deg": 150,
+  "common_errors": [
+    "Insufficient leg raise",
+    "Moving too fast",
+    "Trunk leaning"
+  ],
+  "feedback": {
+    "low_range": "Lift your leg a little further out to the side.",
+    "too_fast": "Slow down the movement.",
+    "good": "Good repetition."
+  }
+}

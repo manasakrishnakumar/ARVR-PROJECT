@@ -45,3 +45,10 @@ Computed over *reliable* repetitions only (repetitions with too few valid pose f
   long random histories (SYNTHETIC sessions used only to check invariants), alternating good/poor sessions never change the level, config validation, API ownership/security, demo exclusion, data deletion.
   A mutation check (weakening the policy) makes the invariant tests fail, so they do detect a broken policy.
 - **Not** verified: that these thresholds are clinically appropriate, or that adaptive difficulty improves any outcome. That needs a properly designed study with real participants.
+
+## Pain check-in (safety rule)
+After a session the user may report pain from 0 to 10 (`pain` block in `config.json`). Pain only ever makes the suggestion more cautious:
+- at `no_increase_at` (default 4) or more, the level is **not raised** even after a good session, and the reasons say why;
+- at `pause_at` (default 7) or more, the suggestion is **pause**, the level is kept, and the user is told to speak to their rehabilitation professional;
+- it applies even when there is too little data to judge the movement.
+The thresholds are illustrative and, like the rest of the config, need review by a rehabilitation professional. Pain is self-reported and stored with the session (with an optional short note); it is not interpreted clinically. Tests: `backend/tests/test_pain.py`.

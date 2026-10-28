@@ -81,7 +81,7 @@
 - [x] **Own-recording workflow** (so the missing "own webcam" data can be collected): /collect page (consent first, participant code not a name, landmark numbers only, nothing uploaded) + `python -m app.ml.cli import-own` (validation, constant-rate resampling without inventing data across gaps, auto-calibrated segmentation, take-level labels). 14 backend tests. NOT used yet: no recordings of your own exist.
 - [x] **Documentation set**: architecture, installation (+ scripts/setup.ps1, verified), user guide (+ manual webcam test protocol), research methodology (+ contribution statement), API reference, limitations and safety, thesis outline.
 - [x] Research page now renders counting, angle accuracy, simulation, and threshold/calibration results.
-- [x] Tests: 171 backend + 36 frontend + 15 Unity edit-mode pass.
+- [x] Tests at that point: 171 backend + 36 frontend + 15 Unity edit-mode (see the end of this file for the current counts).
 
 ### Limitations that remain (cannot be fixed by code alone)
 - [ ] The **live webcam path has not been run on a real webcam** by the author: manual protocol in docs/user-guide.md is for you to run.
@@ -110,11 +110,26 @@
 - [x] **VR prepared, not tested**: OpenXR packages (xr.management 4.6.1, xr.openxr 1.19.0) installed, HUD reports XR status; project still compiles and **15 Unity tests pass**. XR is off by default; a head-tracked rig and controller UI are not built.
 - [ ] Not done: tested immersive VR (no headset), pose estimation inside Unity, Unity accounts/charts.
 
-## Later phases: not started
-Pose estimation, angles, repetition counter, assessment, ML, adaptation, dashboard, AR, 3D, evaluation.
+## Phase 8 - Optional immersive VR (built; NOT tested on a headset)
+- [x] **Web**: the 3D room has an **Enter VR** button (native WebXR `immersive-vr`, local-floor space) shown only when the browser reports support; the room is placed 2.5 m in front of a standing user and a floating panel shows repetitions, phase and feedback. Pure parts tested (support detection incl. errors, placement, panel text); the 3D page still renders and counts with no headset (checked in the browser, no console errors).
+- [x] **Unity**: OpenXR packages and an XR status line (Phase 7c). No head-tracked rig or controller UI.
+- [ ] **Never run on a headset.** Treat VR as unverified. If you do not get a headset, the camera-overlay AR page (Phase 7) is the supported experience: browsers cannot give WebXR sessions the camera frames pose estimation needs, so immersive headset AR with body tracking is not feasible from the web.
 
+## AR upgrades (camera-overlay AR is the primary experience)
+- [x] Ghost trainer (translucent figure fitted to your torso), joint dots (green reached / amber moving / red unclear), setup hints (step back / closer / middle / face the camera), repetition progress bar, large per-repetition flash ("Good / Slower / Go further"), voice cues (also in the 3D room), front/back camera choice (back camera not mirrored), full-screen button. Pure logic unit-tested (`pose/guidance.test.ts`, 15 tests); drawing verified in the browser with the synthetic demo (ghost, dots, hint, progress bar, calibration, counter). **Not verified with a real camera or a phone.**
 
+## Phase 9 - Evaluation and documentation (done as far as the data allows)
+- [x] Results summary for the thesis: `docs/results/SUMMARY.md`; methodology, model card, dataset documentation, limitations and safety, thesis outline, API, architecture, install and user guide are current.
+- [ ] Not possible without people: a study with participants or patients, clinician review of thresholds, a held-out test on your own webcam data (the recording tool exists).
 
+## Extras added after the phases (all tested)
+- [x] **Pain check-in** (0-10 + note, stored per session; no level raise at 4+, pause at 7+; re-evaluates the suggestion; `POST /sessions/{id}/checkin`): 10 backend tests, 2 frontend tests.
+- [x] **Accessibility**: larger text and high-contrast theme (remembered in the browser), keyboard-usable controls; 3 tests.
+- [x] **Backup and restore** (JSON, ownership-safe, idempotent) and a **weekly activity summary** on the dashboard: 5 backend tests, 3 frontend tests.
+- [x] **Printable session report** (print stylesheet, "Print or save as PDF"), pain and note shown on the summary.
+- [x] **Three more exercises** (hip abduction, hip flexion, seated knee extension; 9 in total) and a synthetic demo that can play any exercise; 10 backend tests. The synthetic training dataset is pinned to the original six exercises so earlier results stay reproducible. New exercise ranges are placeholders, checked only with synthetic movements.
+- [x] **General API rate limiting** (300/min per address) and **Docker files** (`docker-compose.yml`; written, **not built or run**: the Docker engine was not running).
+- [x] Tests now: 199 backend + 66 frontend + 15 Unity edit-mode (280); the frontend builds.
 
-
-
+## Still not done
+Tested immersive VR (no headset), real-camera/phone verification of the AR page, hands-on Unity Play-mode check of the newer features, clinician review, any study with people, HTTPS, Playwright end-to-end tests, LSTM/GRU baseline, Docker build.

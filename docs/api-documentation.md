@@ -15,7 +15,11 @@ Signed-in requests send `Authorization: Bearer <token>`; a token that is present
 | `POST /sessions` | optional | create a session (guest if no token); returns the per-session `ws_key` once |
 | `GET /sessions`, `GET /sessions/{id}`, `GET /sessions/{id}/detail` | owner / guest by id | list (signed-in users' own, demo excluded unless asked), session, or full summary with repetitions and the decision |
 | `POST /sessions/{id}/repetitions` | owner | add repetitions manually (the live stream normally does this) |
-| `POST /sessions/{id}/complete` | owner | finish: summary + adaptive recommendation (saved to history only for signed-in, non-demo sessions) |
+| `POST /sessions/{id}/complete` | owner | finish: summary + adaptive recommendation (saved to history only for signed-in, non-demo sessions). Optional body `{pain: 0-10, note}` |
+| `POST /sessions/{id}/checkin` | owner | add pain (0-10) and a note after completion; the suggestion is re-evaluated and can only become more cautious |
+| `GET /me/backup` | signed in | all your real completed sessions, repetitions and suggestions as JSON (no password or token) |
+| `POST /me/restore` | signed in | restore from a backup; existing session ids are skipped, nothing is overwritten or duplicated |
+| `GET /analytics/weekly` | signed in | sessions, repetitions and day streak for the last 7 days (activity counts only) |
 | `POST /adaptation/recommend` | none | stateless policy evaluation: repetitions + optional history in, recommendation out |
 | `GET /adaptation/state?exercise_id` | optional | the level suggested after the user's last session (default for guests) |
 | `POST /adaptation/reset` | user | reset an exercise to the default level (recorded as a decision) |
@@ -30,3 +34,6 @@ Signed-in requests send `Authorization: Bearer <token>`; a token that is present
 
 ## Scores and labels
 Per repetition: `acceptable`, `insufficient_range`, `incomplete_repetition`, `too_fast`, `uncontrolled`, or `insufficient_data` (not enough reliable pose frames; never guessed). Scores are 0-1 experimental metrics from a transparent rule set, not validated outcomes.
+
+
+All HTTP requests are limited to 300 per minute per client address (429 + `Retry-After`); failed sign-ins are limited separately (5 per 5 minutes per username and address).

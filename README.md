@@ -36,3 +36,6 @@ Real research datasets (REHAB26, REHAB24-6; CC BY-NC 4.0) are not included: see 
 
 ## Documentation
 [Architecture](docs/architecture.md) · [Installation](docs/installation.md) (or run `scripts\setup.ps1`) · [User guide and manual webcam test](docs/user-guide.md) · [Research methodology and contribution](docs/research-methodology.md) · [API reference](docs/api-documentation.md) · [Limitations and safety](docs/limitations-and-safety.md) · [Adaptive controller](docs/adaptive-controller.md) · [Datasets](docs/dataset-documentation.md) · [Model card](docs/model-card.md) · [Thesis outline](docs/thesis-outline.md) · [Implementation status](docs/implementation-status.md)
+
+## Latest additions
+AR camera-overlay upgrades (ghost trainer, joint colours, setup hints, voice cues, front/back camera, full screen), pain check-in that makes suggestions more cautious, large-text and high-contrast display, backup/restore and weekly summary, printable session report, nine exercises, experimental web "Enter VR" (untested without a headset), general API rate limiting, and Docker files (untested). Results for the thesis: `docs/results/SUMMARY.md`. Honest status of everything: `docs/implementation-status.md`. About 280 automated tests (199 backend, 66 frontend, 15 Unity).

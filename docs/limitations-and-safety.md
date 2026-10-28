@@ -12,7 +12,7 @@ A working research prototype with a tested software pipeline and **preliminary, 
 ## What has and has not been verified
 | Area | Verified | Not verified |
 |---|---|---|
-| Software behaviour | 222 automated tests (171 backend, 36 frontend, 15 Unity edit-mode): angle maths, missing/low-confidence landmarks, counter, assessment, controller safety bounds, API validation and ownership, persistence, WebSocket, data deletion, importers, evaluation code | behaviour on your particular camera, light and body: run the manual protocol in `docs/user-guide.md` |
+| Software behaviour | about 280 automated tests (199 backend, 66 frontend, 15 Unity edit-mode): angle maths, missing/low-confidence landmarks, counter, assessment, controller safety bounds, API validation and ownership, persistence, WebSocket, data deletion, importers, evaluation code | behaviour on your particular camera, light and body: run the manual protocol in `docs/user-guide.md` |
 | Real camera | pose model runs in the browser; skeleton overlay checked on real video frames (REHAB24-6) | **the live webcam path has not been run on a real webcam by the author**; the demo mode and recorded videos were used |
 | Joint angles | against optical motion capture on 49,171 frames of REHAB24-6: MAE 8.0°, RMSE 14.2°, bias -2.1°, r = 0.97; frames aligned (lag 0); shoulder abduction MAE 8.9° (bias -7.5°), squat 6.8° (bias +5.2°); one camera 9.0°, the other 4.3° | accuracy for other bodies, clothing, cameras, or true 3D angles. Part of the error is definitional (mocap joint centres vs MediaPipe landmarks). These are 2D image-plane angles, not clinical measurements |
 | Repetition counting | against labelled repetition boundaries in two public datasets | people with impaired movement, slow/partial repetitions, other setups. With illustrative angles F1 0.90 and mean count error 1.0 on REHAB26; calibrating the range from the recording itself gives F1 0.97 and error 0.2 (the live app now offers this as a default-on option, not yet evaluated on real live sessions) |
@@ -34,3 +34,10 @@ A study with consent and ethics approval on the target population, labelled by c
 
 ## API rate limiting
 Besides the sign-in lockout, every HTTP client address is limited to 300 requests per minute (HTTP 429 with `Retry-After`). This is a basic guard for a local app, not protection for an internet-facing service. There is still no HTTPS; do not expose the backend beyond this computer.
+
+## Pain check-in, new exercises, and VR
+- **Pain**: the check-in is self-reported and simple. It makes suggestions more cautious (no raise at 4/10 or more, pause at 7/10 or more) but cannot tell whether a movement is safe for you. Thresholds are illustrative.
+- **New exercises** (hip abduction, hip flexion, seated knee extension): verified only with synthetic movements (counted, judged acceptable when complete, never acceptable when tiny). Their ranges are placeholders and have not been checked against real people or a professional; hip movements measured from one camera are rough.
+- **Immersive VR** (web "Enter VR", Unity OpenXR): built but **never tried on a headset**. The camera-overlay AR page and the desktop 3D room are the supported experiences. Immersive headset AR with body tracking is not possible from a browser, because WebXR does not expose the camera frames pose estimation needs.
+- **Ghost trainer, joint colours and setup hints** use the 2D camera landmarks; they guide, they do not judge safety. Voice cues use the browser's speech synthesis, whose voices vary by device.
+- **Backup files** are plain JSON on your computer; protect them like any health-related file.

@@ -201,7 +201,7 @@ export default function PoseLab({ exercises, user, initialExerciseId, onSessionS
     canvasRef.current!.height = 480;
     setError(null);
     await openSession(true);
-    estRef.current = new DemoEstimator();
+    estRef.current = new DemoEstimator(4, exercise);
     setMode("demo"); loop("demo");
   };
 

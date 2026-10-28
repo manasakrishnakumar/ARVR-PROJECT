@@ -25,9 +25,13 @@ CONDITIONS = {
 }
 
 
+SYNTHETIC_EXERCISES = ("elbow_flexion", "knee_flexion", "shoulder_abduction", "shoulder_extension", "shoulder_flexion", "sit_to_stand")
+
+
 def generate_dataset(n_participants: int = 20, reps_per_condition: int = 4, seed: int = 0) -> list[Row]:
     rng = random.Random(seed)
-    exercises = list(load_exercises().values())
+    library = load_exercises()
+    exercises = [library[i] for i in SYNTHETIC_EXERCISES]  # fixed set: adding exercises to the library must not change this dataset
     rows: list[Row] = []
     for p in range(n_participants):
         pid = f"S{p:03d}"

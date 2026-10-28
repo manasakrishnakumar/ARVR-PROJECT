@@ -1,0 +1,62 @@
+{
+  "hysteresis_deg": 8.0,
+  "min_rep_duration_s": 1.0,
+  "illustrative_only": true,
+  "phases": [
+    {
+      "name": "rest",
+      "description": "Start position"
+    },
+    {
+      "name": "moving_out",
+      "description": "Lift the knee forward and up"
+    },
+    {
+      "name": "target",
+      "description": "Hold near target"
+    },
+    {
+      "name": "returning",
+      "description": "Lower the foot slowly"
+    }
+  ],
+  "difficulty_levels": {
+    "1": {
+      "target_reps": 5,
+      "range_fraction": 0.6,
+      "min_rep_duration_s": 1.5
+    },
+    "2": {
+      "target_reps": 8,
+      "range_fraction": 0.75,
+      "min_rep_duration_s": 1.2
+    },
+    "3": {
+      "target_reps": 10,
+      "range_fraction": 0.9,
+      "min_rep_duration_s": 1.0
+    }
+  },
+  "id": "hip_flexion",
+  "name": "Hip flexion (standing march, side-on)",
+  "target_joints": [
+    "hip"
+  ],
+  "landmarks": [
+    "LEFT_SHOULDER",
+    "LEFT_HIP",
+    "LEFT_KNEE"
+  ],
+  "start_angle_deg": 176,
+  "target_angle_deg": 100,
+  "common_errors": [
+    "Insufficient knee lift",
+    "Moving too fast",
+    "Leaning back"
+  ],
+  "feedback": {
+    "low_range": "Lift your knee a little higher.",
+    "too_fast": "Slow down the movement.",
+    "good": "Good repetition."
+  }
+}

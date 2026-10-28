@@ -1,0 +1,62 @@
+{
+  "hysteresis_deg": 8.0,
+  "min_rep_duration_s": 1.0,
+  "illustrative_only": true,
+  "phases": [
+    {
+      "name": "rest",
+      "description": "Start position"
+    },
+    {
+      "name": "moving_out",
+      "description": "Straighten the knee"
+    },
+    {
+      "name": "target",
+      "description": "Hold near target"
+    },
+    {
+      "name": "returning",
+      "description": "Lower the foot slowly"
+    }
+  ],
+  "difficulty_levels": {
+    "1": {
+      "target_reps": 5,
+      "range_fraction": 0.6,
+      "min_rep_duration_s": 1.5
+    },
+    "2": {
+      "target_reps": 8,
+      "range_fraction": 0.75,
+      "min_rep_duration_s": 1.2
+    },
+    "3": {
+      "target_reps": 10,
+      "range_fraction": 0.9,
+      "min_rep_duration_s": 1.0
+    }
+  },
+  "id": "knee_extension_seated",
+  "name": "Knee extension (seated, side-on)",
+  "target_joints": [
+    "knee"
+  ],
+  "landmarks": [
+    "LEFT_HIP",
+    "LEFT_KNEE",
+    "LEFT_ANKLE"
+  ],
+  "start_angle_deg": 95,
+  "target_angle_deg": 165,
+  "common_errors": [
+    "Insufficient leg straightening",
+    "Moving too fast",
+    "Lifting the thigh"
+  ],
+  "feedback": {
+    "low_range": "Straighten your knee a little more.",
+    "too_fast": "Slow down the movement.",
+    "good": "Good repetition."
+  }
+}

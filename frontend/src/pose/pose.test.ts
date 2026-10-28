@@ -55,3 +55,17 @@ describe("DemoEstimator (synthetic)", () => {
     expect(bodyAngles(hidden).every((x) => x.angle === null)).toBe(true);
   });
 });
+
+describe("DemoEstimator with other exercises (synthetic)", () => {
+  const ex = { id: "hip_abduction", name: "Hip abduction", target_joints: ["hip"], landmarks: ["LEFT_SHOULDER", "LEFT_HIP", "LEFT_KNEE"], common_errors: [],
+    start_angle_deg: 176, target_angle_deg: 150, difficulty_levels: {}, illustrative_only: true };
+  it("moves the exercise's own joint between its start and target angles", () => {
+    const est = new DemoEstimator(4, ex);
+    const angleAt = (ms: number) => {
+      const lm = est.detect(null, ms).landmarks!;
+      return jointAngle(lm[11], lm[23], lm[25]);
+    };
+    expect(angleAt(0)).toBeCloseTo(176, 0);
+    expect(angleAt(2000)).toBeCloseTo(150, 0);
+  });
+});

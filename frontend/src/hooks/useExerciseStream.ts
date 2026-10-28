@@ -98,7 +98,7 @@ export function useExerciseStream(exercise: Exercise | null, level: number, vide
     tick();
   }, [exercise, videoRef]);
 
-  const startDemo = async () => { stop(); setError(null); await open(true); estRef.current = new DemoEstimator(); setMode("demo"); loop("demo"); };
+  const startDemo = async () => { stop(); setError(null); await open(true); estRef.current = new DemoEstimator(4, exercise); setMode("demo"); loop("demo"); };
 
   const startCamera = async (facing: "user" | "environment" = "user") => {
     stop(); setError(null);
