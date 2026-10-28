@@ -31,3 +31,6 @@ A working research prototype with a tested software pipeline and **preliminary, 
 
 ## What would change these statements
 A study with consent and ethics approval on the target population, labelled by clinicians; live range calibration; a clinician review of thresholds and error definitions; and tests on real hardware by the person who will use the system.
+
+## API rate limiting
+Besides the sign-in lockout, every HTTP client address is limited to 300 requests per minute (HTTP 429 with `Retry-After`). This is a basic guard for a local app, not protection for an internet-facing service. There is still no HTTPS; do not expose the backend beyond this computer.

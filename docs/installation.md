@@ -77,3 +77,6 @@ The real research datasets are **not included** (licence, size). `docs/dataset-d
 | Counts look wrong for your body or camera angle | the exercise ranges are illustrative defaults; see "Calibration" in `docs/limitations-and-safety.md` |
 | Frame rate below 10 per second | close other applications, improve lighting, use a smaller camera resolution; see `/analysis` |
 | Port already in use | stop the old server (`Get-NetTCPConnection -LocalPort 8000` shows the process) or use another port |
+
+## Docker (optional, untested)
+`docker compose up --build` from the repository root should serve the app at http://localhost:8080 (nginx proxies `/api` to the backend; the database lives in a Docker volume). The files are written but **have not been built or run**: the Docker engine was not running when they were added. The MediaPipe model and wasm files are git-ignored: run `scripts\download_pose_model.ps1` before building so the camera pages work.
