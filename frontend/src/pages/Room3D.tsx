@@ -1,0 +1,85 @@
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import RecommendationCard from "../components/RecommendationCard";
+import Scene3D, { SceneBoundary } from "../components/Avatar3D";
+import { useAuth } from "../context/AuthContext";
+import { useExerciseStream } from "../hooks/useExerciseStream";
+import { useExercises } from "../hooks/useExercises";
+import { api } from "../services/api";
+import { trainerPose, trainerProgress } from "../pose/trainer";
+import type { Landmark } from "../pose/types";
+
+/** Desktop 3D rehabilitation room: a virtual trainer demonstrates the movement beside an avatar that mirrors you.
+ *  Works in any browser without a headset. The pose pipeline is independent of the 3D scene: if 3D fails, counting and feedback continue. */
+export default function Room3D() {
+  const { exercises, loading } = useExercises();
+  const { user } = useAuth();
+  const [exerciseId, setExerciseId] = useState("elbow_flexion");
+  const [level, setLevel] = useState(1);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const trainerRef = useRef<Landmark[] | null>(null);
+  const exercise = exercises.find((e) => e.id === exerciseId) ?? null;
+  const s = useExerciseStream(exercise, level, videoRef);
+
+  // signed-in users start at the suggested level
+  useEffect(() => {
+    if (!user || s.mode !== "idle") return;
+    api.adaptationState(exerciseId).then((a) => setLevel(a.recommended_level)).catch(() => undefined);
+  }, [user, exerciseId, s.mode]);
+
+  // the virtual trainer loops the exercise's illustrative movement
+  useEffect(() => {
+    if (!exercise) return;
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = () => { trainerRef.current = trainerPose(exercise, "LEFT", trainerProgress((performance.now() - t0) / 1000)); raf = requestAnimationFrame(tick); };
+    tick();
+    return () => cancelAnimationFrame(raf);
+  }, [exercise]);
+
+  const running = s.mode !== "idle";
+  if (loading) return <p className="muted">Loading...</p>;
+  const lv = exercise?.difficulty_levels ?? {};
+  return (
+    <>
+      <h1>3D rehabilitation room</h1>
+      <p className="muted">
+        Desktop 3D view (no headset needed). The amber figure is a virtual trainer showing the illustrative movement; the teal figure mirrors you.
+        Immersive VR is not part of this version.
+      </p>
+      <div className="row">
+        <label>Exercise{" "}
+          <select value={exerciseId} disabled={running} onChange={(e) => { setExerciseId(e.target.value); setLevel(1); }}>
+            {exercises.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+          </select>
+        </label>
+        <label>Level{" "}
+          <select value={level} disabled={running} onChange={(e) => setLevel(Number(e.target.value))}>
+            {Object.keys(lv).map((l) => <option key={l} value={l}>Level {l}</option>)}
+          </select>
+        </label>
+        <button className="primary" onClick={s.startCamera} disabled={running}>Start camera</button>
+        <button onClick={s.startDemo} disabled={running}>Synthetic demo</button>
+        <button onClick={() => void s.stopAndSave()} disabled={!running}>Stop and save</button>
+      </div>
+      {s.error && <p className="error" role="alert">{s.error}</p>}
+      {s.sock === "failed" && <p className="error" role="alert">Analysis backend unreachable: movement is shown but repetitions are not counted.</p>}
+
+      <video ref={videoRef} className="hidden" playsInline muted />
+      <SceneBoundary fallback={<p className="notice error-banner" role="alert">The 3D view could not start (WebGL may be unavailable). Counting and feedback below still work; you can also use the Live session page.</p>}>
+        <Scene3D user={s.landmarksRef} trainer={trainerRef} />
+      </SceneBoundary>
+
+      <div className="stats-grid">
+        <div className="card stat"><span className="muted">Repetitions</span><strong>{s.live?.counted_reps ?? 0}/{s.targetReps || "-"}</strong></div>
+        <div className="card stat"><span className="muted">Phase</span><strong style={{ fontSize: "1.2rem", textTransform: "capitalize" }}>{s.live ? s.live.phase.replace("_", " ") : "waiting"}</strong></div>
+        <div className="card stat"><span className="muted">Last repetition</span><strong style={{ fontSize: "1.2rem" }}>{s.lastRep ? `${s.lastRep.label.replace("_", " ")}${s.lastRep.score != null ? ` (${s.lastRep.score.toFixed(2)})` : ""}` : "-"}</strong></div>
+        <div className="card stat"><span className="muted">Level</span><strong>{level}</strong></div>
+      </div>
+      <p className="feedback" aria-live="polite">{s.poseWarn ? "Pose not detected clearly. Adjust your position." : s.lastRep?.feedback ?? "Start the camera or the demo."}</p>
+      {s.result && <RecommendationCard result={s.result} />}
+      {s.sessionId && <p><Link className="btn" to={`/sessions/${s.sessionId}`}>View the full session summary</Link></p>}
+      <p className="muted">Targets are illustrative, not prescribed. Research prototype, not a medical device.</p>
+    </>
+  );
+}

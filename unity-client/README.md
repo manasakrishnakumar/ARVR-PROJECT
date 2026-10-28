@@ -1,0 +1,26 @@
+# Unity client (optional)
+
+A Unity 6 (6000.0 LTS) desktop client for the ARVR backend: a 3D room, a virtual trainer, and a live HUD. It uses the **same backend and exercise data** as the web app (`WS /api/ws/analysis`, `POST /api/sessions`, `/complete`), so counting, quality assessment and the adaptive suggestion are identical.
+
+**Status: scaffold, NOT yet compiled or run in the Unity Editor.** Treat it as untested until the checklist below is done. It does not need a headset; immersive VR (XR Plug-in / OpenXR) is not set up and has not been tested.
+
+## What it does today
+- Builds a simple room and a trainer avatar (elbow flexion only) from primitives.
+- Streams a joint angle at 15 Hz to the backend from either a synthetic "Trainer demo" sweep (sent as a **demo session**, never saved to a history) or a manual slider.
+- Shows repetitions, phase, per-repetition feedback and, after **Stop and save**, the adaptive suggestion with reasons and the safety note.
+
+## What it does not do
+- **No pose estimation.** A real pose source (a MediaPipe Unity plugin, or relaying the web app's angle stream) is future work. Camera video never enters this client.
+- Other exercises' avatars, accounts/login, charts, VR/XR.
+
+## Run it
+1. Install Unity Hub and the Editor 6000.0.85f1 (Unity ID sign-in and a free Personal licence activation are done by you in the Hub).
+2. Unity Hub -> Add -> select this `unity-client` folder -> open it (first open imports packages and takes a few minutes).
+3. Create an empty scene, add an empty GameObject, and add the **RehabRoom** component (`Assets/Scripts/RehabRoom.cs`). Save the scene.
+4. Start the backend (`docs/installation.md`), then press Play and click **Start**.
+
+## Checklist to mark it as verified
+- [ ] Project opens and compiles with no errors on 6000.0.85f1
+- [ ] Press Play: room and avatar visible; trainer demo moves the forearm
+- [ ] With the backend running: repetitions count up and feedback appears; **Stop and save** shows a suggestion
+- [ ] With the backend stopped: a clear message appears and the room still runs

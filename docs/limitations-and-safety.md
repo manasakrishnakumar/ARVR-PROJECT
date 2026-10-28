@@ -27,7 +27,7 @@ A working research prototype with a tested software pipeline and **preliminary, 
 5. **Take-level labels** in the own-recording tool assume every repetition in a take was done as intended.
 6. **Thresholds** in `backend/app/personalization/config.json` and the rule set are illustrative and unreviewed by a clinician.
 7. **Local prototype security.** Single-user, local-network assumptions: no rate limiting, no HTTPS, tokens in browser storage, a per-session key in the WebSocket URL. Not suitable for exposure to the internet.
-8. **Not built:** AR camera-overlay mode, desktop 3D room, immersive VR/WebXR, Unity client, LSTM/GRU temporal model. See `docs/implementation-status.md`. No headset has been used.
+8. **Built but limited:** a desktop 3D room and an AR *camera overlay* (not immersive AR) exist and were checked with the synthetic demo only; a Unity client scaffold exists but has not been compiled or run. **Not built:** immersive VR/WebXR sessions, LSTM/GRU temporal model. No headset has been used.
 
 ## What would change these statements
 A study with consent and ethics approval on the target population, labelled by clinicians; live range calibration; a clinician review of thresholds and error definitions; and tests on real hardware by the person who will use the system.

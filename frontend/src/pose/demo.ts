@@ -11,6 +11,7 @@ export class DemoEstimator implements PoseEstimator {
     const rad = (theta * Math.PI) / 180;
     const lm: Landmark[] = Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.5, z: 0, visibility: 0 }));
     const set = (i: number, x: number, y: number) => (lm[i] = { x, y, z: 0, visibility: 0.99 });
+    set(0, 0.5, 0.16); // nose, so avatars get a head
     set(LM.L_SHOULDER, 0.58, 0.28); set(LM.R_SHOULDER, 0.42, 0.28);
     set(LM.L_HIP, 0.56, 0.58); set(LM.R_HIP, 0.44, 0.58);
     set(LM.L_KNEE, 0.56, 0.78); set(LM.R_KNEE, 0.44, 0.78);

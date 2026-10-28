@@ -14,3 +14,12 @@ frontend/public/wasm/
 frontend/public/models/*.task
 datasets/external/
 datasets/own/
+# Unity generated files
+unity-client/Library/
+unity-client/Temp/
+unity-client/Logs/
+unity-client/obj/
+unity-client/UserSettings/
+unity-client/*.csproj
+unity-client/*.sln
+unity-client/Builds/

@@ -92,6 +92,12 @@
 - [ ] Automated browser end-to-end tests (Playwright) are not set up; the real-camera path is manual.
 - [ ] Local-prototype security (no HTTPS, rate limiting).
 
+## Phase 7 - 3D room, AR camera overlay, Unity scaffold
+- [x] **Desktop 3D room** (/room, Three.js via react-three-fiber, no headset): room, a virtual trainer (amber) looping the exercise's illustrative movement beside an avatar (teal) that mirrors the user; live repetitions, phase, last-repetition result, level, feedback and the same adaptive recommendation card; saves sessions like the live page. A scene error boundary keeps counting and feedback working if WebGL fails. Verified in the browser with the synthetic demo (WebGL on, avatars visible, repetitions counted). Shared `useExerciseStream` hook; 3 new tests for the trainer pose (33 frontend tests pass).
+- [x] **AR camera-overlay mode** (/ar): guidance drawn over the camera picture (skeleton, dashed target ray and arc at the exercise joint, live angle, repetitions, feedback). Clearly labelled a **camera overlay, not immersive AR**; WebXR support is only detected and reported. Verified drawing with the synthetic demo; **not tested on a real camera or phone**.
+- [x] **Unity client scaffold** (unity-client/): Unity 6 (6000.0.85f1) project files and C# scripts (backend WebSocket client, REST client, 3D room with trainer avatar, HUD) using the same backend. Unity Hub installed via winget; Editor download started with the Hub CLI. **Not yet opened, compiled or run in the Editor**: needs the Editor to finish downloading and a Unity ID sign-in and licence activation by you; checklist in unity-client/README.md. No pose estimation in Unity (future work).
+- [ ] Not built: immersive WebXR AR/VR sessions, a headset test, live per-user calibration, Unity avatars for other exercises.
+
 ## Later phases: not started
 Pose estimation, angles, repetition counter, assessment, ML, adaptation, dashboard, AR, 3D, evaluation.
 

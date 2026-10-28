@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 
 const LINKS: [string, string][] = [
-  ["/", "Home"], ["/exercises", "Exercises"], ["/session", "Live session"], ["/analysis", "Pose analysis"], ["/dashboard", "Dashboard"],
+  ["/", "Home"], ["/exercises", "Exercises"], ["/session", "Live session"], ["/analysis", "Pose analysis"], ["/room", "3D room"], ["/ar", "AR overlay"], ["/dashboard", "Dashboard"],
   ["/research", "Research"], ["/collect", "Record data"], ["/settings", "Settings & privacy"],
 ];
 
