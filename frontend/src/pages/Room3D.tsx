@@ -9,6 +9,7 @@ import { api } from "../services/api";
 import { trainerPose, trainerProgress } from "../pose/trainer";
 import { buildRelayFrame, newRoomCode, RelayPublisher } from "../services/relay";
 import type { Landmark } from "../pose/types";
+import { repCue, speak } from "../pose/speech";
 
 /** Desktop 3D rehabilitation room: a virtual trainer demonstrates the movement beside an avatar that mirrors you.
  *  Works in any browser without a headset. The pose pipeline is independent of the 3D scene: if 3D fails, counting and feedback continue. */
@@ -57,6 +58,13 @@ export default function Room3D() {
     return () => { clearInterval(timer); pub.close(); };
   }, [share, room, s.landmarksRef, s.angleRef]);
 
+  const [voice, setVoice] = useState(false);
+  const voiceRef = useRef(false);
+  voiceRef.current = voice;
+  useEffect(() => {
+    if (voiceRef.current && s.lastRep) speak(repCue(s.lastRep, s.live?.counted_reps ?? s.repCount, s.targetReps));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.lastRep]);
   const running = s.mode !== "idle";
   if (loading) return <p className="muted">Loading...</p>;
   const lv = exercise?.difficulty_levels ?? {};
@@ -81,6 +89,7 @@ export default function Room3D() {
         <button className="primary" onClick={s.startCamera} disabled={running}>Start camera</button>
         <button onClick={s.startDemo} disabled={running}>Synthetic demo</button>
         <button onClick={() => void s.stopAndSave()} disabled={!running}>Stop and save</button>
+        <label><input type="checkbox" checked={voice} onChange={(e) => setVoice(e.target.checked)} /> Voice cues</label>
       </div>
       {s.error && <p className="error" role="alert">{s.error}</p>}
       {s.sock === "failed" && <p className="error" role="alert">Analysis backend unreachable: movement is shown but repetitions are not counted.</p>}

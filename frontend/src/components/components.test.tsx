@@ -121,3 +121,16 @@ describe("Layout", () => {
     expect(screen.getByRole("link", { name: "ann" })).toBeInTheDocument();
   });
 });
+
+describe("Layout display options", () => {
+  it("toggles large text and high contrast on the document", async () => {
+    vi.mocked(api.health).mockResolvedValue({ status: "ok", disclaimer: "d" } as never);
+    render(<MemoryRouter><Layout /></MemoryRouter>);
+    await userEvent.click(screen.getByRole("button", { name: "A+" }));
+    expect(document.documentElement.dataset.text).toBe("large");
+    await userEvent.click(screen.getByRole("button", { name: "Contrast" }));
+    expect(document.documentElement.dataset.contrast).toBe("high");
+    await userEvent.click(screen.getByRole("button", { name: "Contrast" }));
+    expect(document.documentElement.dataset.contrast).toBe("normal");
+  });
+});

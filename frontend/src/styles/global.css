@@ -93,3 +93,17 @@ label { display: inline-flex; align-items: center; gap: 6px; }
   input { min-width: 0; width: 100%; }
   h1 { font-size: 1.4rem; }
 }
+
+/* display options (see src/a11y.ts) */
+.a11y { display: flex; gap: 4px; }
+.a11y button { padding: 4px 8px; font-size: .85rem; }
+.a11y button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
+html[data-text="large"] { font-size: 125%; }
+html[data-text="large"] button, html[data-text="large"] input, html[data-text="large"] select { font-size: 1rem; }
+html[data-contrast="high"] { --bg: #000; --card: #000; --text: #fff; --muted: #e6e6e6; --grid: #fff; --accent: #ffe600; --accent-text: #000;
+  --err: #ff8a80; --ok: #7CFC00; --warn-bg: #000; --warn-border: #ffe600; }
+html[data-contrast="high"] .card { border: 2px solid #fff; box-shadow: none; }
+html[data-contrast="high"] a { color: #ffe600; }
+html[data-contrast="high"] :focus-visible, :focus-visible { outline: 3px solid #ffe600; outline-offset: 2px; }
+.checkin { display: grid; gap: 8px; margin: 12px 0; }
+.checkin label { display: grid; gap: 4px; }
