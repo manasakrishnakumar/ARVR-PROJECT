@@ -36,6 +36,7 @@ export function useExerciseStream(exercise: Exercise | null, level: number, vide
   const [poseWarn, setPoseWarn] = useState(false);
   const [result, setResult] = useState<CompleteOut | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [calibrated, setCalibrated] = useState<{ start: number; target: number } | null>(null);
 
   const stop = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
@@ -61,14 +62,15 @@ export function useExerciseStream(exercise: Exercise | null, level: number, vide
   const open = async (isDemo: boolean) => {
     if (!exercise) return;
     t0.current = performance.now(); lastSend.current = 0; repsRef.current = 0;
-    setRepCount(0); setLastRep(null); setResult(null); setSessionId(null);
+    setRepCount(0); setLastRep(null); setResult(null); setSessionId(null); setCalibrated(null);
     sessionRef.current = await api.createSession(exercise.id, level, isDemo).catch(() => null); // the pose stream works without it
     const s = sessionRef.current;
     sockRef.current = new AnalysisSocket(exercise.id, level, (m) => {
       if (m.type === "hello") setTargetReps(m.target_reps);
+      else if (m.type === "calibrated") setCalibrated({ start: m.start, target: m.target });
       else if (m.type === "state") setLive(m);
       else if (m.type === "rep") { repsRef.current += 1; setRepCount(repsRef.current); setLastRep(m); }
-    }, setSock, s ? { id: s.id, key: s.ws_key } : undefined);
+    }, setSock, s ? { id: s.id, key: s.ws_key } : undefined, true); // the 3D room and AR pages always calibrate to the user's range
   };
 
   const loop = useCallback((m: Mode) => {
@@ -116,6 +118,6 @@ export function useExerciseStream(exercise: Exercise | null, level: number, vide
     }
   };
 
-  return { mode, error, sock, live, targetReps, lastRep, repCount, poseWarn, result, sessionId, landmarksRef, angleRef,
+  return { mode, error, sock, live, targetReps, lastRep, repCount, poseWarn, result, sessionId, calibrated, landmarksRef, angleRef,
            startCamera, startDemo, stopAndSave, minConfidence: MIN_CONFIDENCE };
 }

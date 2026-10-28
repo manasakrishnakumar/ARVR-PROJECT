@@ -76,7 +76,8 @@ export default function Room3D() {
         <div className="card stat"><span className="muted">Last repetition</span><strong style={{ fontSize: "1.2rem" }}>{s.lastRep ? `${s.lastRep.label.replace("_", " ")}${s.lastRep.score != null ? ` (${s.lastRep.score.toFixed(2)})` : ""}` : "-"}</strong></div>
         <div className="card stat"><span className="muted">Level</span><strong>{level}</strong></div>
       </div>
-      <p className="feedback" aria-live="polite">{s.poseWarn ? "Pose not detected clearly. Adjust your position." : s.lastRep?.feedback ?? "Start the camera or the demo."}</p>
+      <p className="feedback" aria-live="polite">{s.live?.calibrating ? "Calibrating: do 2 or 3 slow, comfortable repetitions (about 5 seconds)." : s.poseWarn ? "Pose not detected clearly. Adjust your position." : s.lastRep?.feedback ?? "Start the camera or the demo."}</p>
+      {s.calibrated && <p className="muted">Calibrated range: {s.calibrated.start.toFixed(0)}° to {s.calibrated.target.toFixed(0)}° (what you demonstrated, not a target).</p>}
       {s.result && <RecommendationCard result={s.result} />}
       {s.sessionId && <p><Link className="btn" to={`/sessions/${s.sessionId}`}>View the full session summary</Link></p>}
       <p className="muted">Targets are illustrative, not prescribed. Research prototype, not a medical device.</p>

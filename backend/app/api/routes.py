@@ -71,7 +71,7 @@ def _persist_rep(session_id: str, rep: RepOut) -> None:
 
 @router.websocket("/ws/analysis")
 async def analysis_ws(ws: WebSocket, exercise_id: str, difficulty: int = 1, session_id: str | None = None,
-                      key: str | None = None) -> None:
+                      key: str | None = None, calibrate: str = "off") -> None:
     """Live stream: client sends {"t": seconds, "angle": deg|null}; server replies with state per frame
     and a "rep" message whenever a repetition finishes. Pose estimation stays in the browser.
 
@@ -91,13 +91,13 @@ async def analysis_ws(ws: WebSocket, exercise_id: str, difficulty: int = 1, sess
                 await ws.close(code=4403, reason="session not found, closed, or key/exercise/level mismatch")
                 return
         try:
-            sa = StreamAnalyzer(ex, difficulty)
+            sa = StreamAnalyzer(ex, difficulty, calibrate=calibrate == "auto")
         except ValueError as e:
             await ws.close(code=4422, reason=str(e)[:100])
             return
         await ws.send_json({"type": "hello", "exercise_id": ex.id, "difficulty": difficulty,
                             "target_reps": sa.level["target_reps"], "disclaimer": DISCLAIMER,
-                            "saving": session_id is not None})
+                            "saving": session_id is not None, "calibrating": sa.calibrating})
         last_t = -1.0
         while True:
             msg = await ws.receive_json()
@@ -113,9 +113,11 @@ async def analysis_ws(ws: WebSocket, exercise_id: str, difficulty: int = 1, sess
             last_t = t
             u = sa.push(t, angle)
             await ws.send_json({"type": "state", "phase": u.phase, "counted_reps": u.counted_reps,
-                                "angle": u.angle, "progress": u.progress})
-            if u.rep is not None:
-                rep = _rep_out(u.rep)
+                                "angle": u.angle, "progress": u.progress, "calibrating": u.calibrating})
+            if u.calibrated is not None:
+                await ws.send_json({"type": "calibrated", "start": u.calibrated[0], "target": u.calibrated[1]})
+            for r in u.reps:  # several after a calibration replay
+                rep = _rep_out(r)
                 if session_id is not None:
                     _persist_rep(session_id, rep)
                 await ws.send_json({"type": "rep", **rep.model_dump()})

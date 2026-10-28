@@ -53,6 +53,8 @@ export default function PoseLab({ exercises, user, initialExerciseId, onSessionS
   const [exerciseId, setExerciseId] = useState(
     initialExerciseId && exercises.some((e) => e.id === initialExerciseId) ? initialExerciseId : "elbow_flexion");
   const [lastSessionId, setLastSessionId] = useState<string | null>(null);
+  const [calibrate, setCalibrate] = useState(true);
+  const [calibrated, setCalibrated] = useState<{ start: number; target: number } | null>(null);
   const [difficulty, setDifficulty] = useState(1);
   const [adaptive, setAdaptive] = useState<AdaptationState | null>(null);
   const [live, setLive] = useState<StateMsg | null>(null);
@@ -134,12 +136,13 @@ export default function PoseLab({ exercises, user, initialExerciseId, onSessionS
     t0Ref.current = performance.now();
     lastSendRef.current = 0;
     repCountRef.current = 0;
-    setReps([]); setFeedback(""); setLive(null); setResult(null);
+    setReps([]); setFeedback(""); setLive(null); setResult(null); setCalibrated(null);
     // the session record lets the server save repetitions and later judge the session; the pose stream still works without it
     sessionRef.current = await api.createSession(exerciseId, difficulty, isDemo).catch(() => null);
     const s = sessionRef.current;
     sockRef.current = new AnalysisSocket(exerciseId, difficulty, (m) => {
       if (m.type === "hello") setTargetReps(m.target_reps);
+      else if (m.type === "calibrated") setCalibrated({ start: m.start, target: m.target });
       else if (m.type === "state") setLive(m);
       else if (m.type === "rep") {
         repCountRef.current += 1;
@@ -147,7 +150,7 @@ export default function PoseLab({ exercises, user, initialExerciseId, onSessionS
         setFeedback(m.feedback); // once per repetition, never per frame
         speak(m.feedback);
       }
-    }, setSockStatus, s ? { id: s.id, key: s.ws_key } : undefined);
+    }, setSockStatus, s ? { id: s.id, key: s.ws_key } : undefined, calibrate);
   };
 
   const loop = useCallback((m: Mode) => {
@@ -237,7 +240,8 @@ export default function PoseLab({ exercises, user, initialExerciseId, onSessionS
   };
   const count = live?.counted_reps ?? 0;
   const progress = Math.max(0, Math.min(1, live?.progress ?? 0));
-  const message = poseWarn ? "Pose not detected clearly. Adjust your position."
+  const message = live?.calibrating ? "Calibrating: do 2 or 3 slow, comfortable repetitions. Counting starts after about 5 seconds of movement."
+    : poseWarn ? "Pose not detected clearly. Adjust your position."
     : targetReps && count >= targetReps ? "Target repetitions reached. Take a break if you feel discomfort."
     : feedback;
 
@@ -260,6 +264,8 @@ export default function PoseLab({ exercises, user, initialExerciseId, onSessionS
           </select>
         </label>
         <label><input type="checkbox" checked={audio} onChange={(e) => setAudio(e.target.checked)} /> Audio feedback</label>
+        <label title="Measures the range you actually move in during the first seconds and counts relative to it. It describes what you did, not a medical target.">
+          <input type="checkbox" checked={calibrate} disabled={running} onChange={(e) => setCalibrate(e.target.checked)} /> Calibrate to my range</label>
       </div>
       {adaptive && adaptive.source === "history" && (
         <p className="muted">
@@ -293,6 +299,7 @@ export default function PoseLab({ exercises, user, initialExerciseId, onSessionS
           <div className="big" aria-label="Repetitions">{count}<span className="muted"> / {targetReps || "-"} reps</span></div>
           <div className="chip">{live ? live.phase.replace("_", " ") : "waiting"}</div>
           <div className="bar" aria-label="Movement progress"><div style={{ width: `${progress * 100}%` }} /></div>
+          {calibrated && <p className="muted">Calibrated range: {calibrated.start.toFixed(0)}° to {calibrated.target.toFixed(0)}° (what you demonstrated, not a target).</p>}
           <p className="muted">Angle {live?.angle != null ? `${live.angle.toFixed(0)}°` : "n/a"} · Level {difficulty}{exercise?.illustrative_only ? " · illustrative targets" : ""}</p>
           <p className="feedback" aria-live="polite">{message || "Start moving to begin."}</p>
         </div>

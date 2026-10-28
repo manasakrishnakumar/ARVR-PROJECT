@@ -17,6 +17,7 @@ import numpy as np
 from app.angle_calculation.angles import AngleSmoother, joint_angle
 from app.exercises.library import Exercise, get_exercise
 from app.ml.rehab26 import FPS, _landmarks
+from app.repetition_detection.calibration import estimate_range
 from app.repetition_detection.counter import RepConfig, RepetitionCounter
 
 MARGIN = 15  # frames of rest kept either side of a block
@@ -34,12 +35,7 @@ def auto_range(angles: list[float | None], ex: Exercise) -> tuple[float, float] 
         s = sm.update(a) if a is not None else None
         if s is not None:
             vals.append(s)
-    if len(vals) < 30:
-        return None
-    lo, hi = float(np.percentile(vals, 10)), float(np.percentile(vals, 90))
-    if hi - lo < 15:  # almost no movement: cannot calibrate
-        return None
-    return (lo, hi) if ex.target_angle_deg > ex.start_angle_deg else (hi, lo)
+    return estimate_range(vals, ex)  # the same rule the live app uses
 
 
 def detect(angles: list[float | None], start: float, target: float, required_fraction: float, hysteresis_deg: float,
