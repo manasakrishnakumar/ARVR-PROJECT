@@ -7,6 +7,7 @@ import { useExerciseStream } from "../hooks/useExerciseStream";
 import { useExercises } from "../hooks/useExercises";
 import { api } from "../services/api";
 import { trainerPose, trainerProgress } from "../pose/trainer";
+import { buildRelayFrame, newRoomCode, RelayPublisher } from "../services/relay";
 import type { Landmark } from "../pose/types";
 
 /** Desktop 3D rehabilitation room: a virtual trainer demonstrates the movement beside an avatar that mirrors you.
@@ -36,6 +37,25 @@ export default function Room3D() {
     tick();
     return () => cancelAnimationFrame(raf);
   }, [exercise]);
+
+  // optional: share the live pose with the Unity client (numbers only, through the local backend)
+  const [share, setShare] = useState(false);
+  const [room, setRoom] = useState("");
+  const [relayStatus, setRelayStatus] = useState("not sharing");
+  const latest = useRef({ live: s.live, lastRep: s.lastRep, targetReps: s.targetReps });
+  latest.current = { live: s.live, lastRep: s.lastRep, targetReps: s.targetReps };
+  useEffect(() => {
+    if (!share || !room) { setRelayStatus("not sharing"); return; }
+    const pub = new RelayPublisher(room, (st, detail) => setRelayStatus(st === "open" ? "sharing: waiting for Unity" : st === "connecting" ? "connecting..." : `stopped${detail ? ` (${detail})` : ""}`));
+    const timer = setInterval(() => {
+      const lm = s.landmarksRef.current;
+      if (!lm) return;
+      const { live, lastRep, targetReps } = latest.current;
+      pub.publish(buildRelayFrame(lm, { angle: s.angleRef.current, phase: live?.phase ?? "waiting", countedReps: live?.counted_reps ?? 0,
+        targetReps, feedback: lastRep?.feedback ?? "", label: lastRep?.label ?? "" }));
+    }, 66);
+    return () => { clearInterval(timer); pub.close(); };
+  }, [share, room, s.landmarksRef, s.angleRef]);
 
   const running = s.mode !== "idle";
   if (loading) return <p className="muted">Loading...</p>;
@@ -80,6 +100,14 @@ export default function Room3D() {
       {s.calibrated && <p className="muted">Calibrated range: {s.calibrated.start.toFixed(0)}° to {s.calibrated.target.toFixed(0)}° (what you demonstrated, not a target).</p>}
       {s.result && <RecommendationCard result={s.result} />}
       {s.sessionId && <p><Link className="btn" to={`/sessions/${s.sessionId}`}>View the full session summary</Link></p>}
+      <section className="card">
+        <h2>Show this session in Unity (optional)</h2>
+        <p className="muted">Sends your pose as numbers (no video or image) to the backend on this computer, which forwards it to the Unity client that joins the same room code.
+          Do not share the code or expose the backend to the internet.</p>
+        <label><input type="checkbox" checked={share} onChange={(e) => { setShare(e.target.checked); if (e.target.checked && !room) setRoom(newRoomCode()); }} /> Share live pose</label>
+        {share && <p>Room code: <strong style={{ letterSpacing: 2 }}>{room}</strong> · {relayStatus}</p>}
+        {share && <p className="muted">In Unity, choose "Live from browser", type this code and press Start. Start the camera here first.</p>}
+      </section>
       <p className="muted">Targets are illustrative, not prescribed. Research prototype, not a medical device.</p>
     </>
   );
