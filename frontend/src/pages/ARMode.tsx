@@ -85,7 +85,7 @@ export default function ARMode() {
         <canvas ref={canvasRef} className="overlay" width={640} height={480} />
       </div>
       <p className="muted">Dashed amber line: the illustrative target for the joint. Green skeleton: your tracked pose; amber parts are low confidence. No video is stored or uploaded.</p>
-      {s.result && <RecommendationCard result={s.result} />}
+      {s.result && <RecommendationCard result={s.result} sessionId={s.sessionId} />}
     </>
   );
 }

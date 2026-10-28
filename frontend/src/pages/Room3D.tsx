@@ -98,7 +98,7 @@ export default function Room3D() {
       </div>
       <p className="feedback" aria-live="polite">{s.live?.calibrating ? "Calibrating: do 2 or 3 slow, comfortable repetitions (about 5 seconds)." : s.poseWarn ? "Pose not detected clearly. Adjust your position." : s.lastRep?.feedback ?? "Start the camera or the demo."}</p>
       {s.calibrated && <p className="muted">Calibrated range: {s.calibrated.start.toFixed(0)}° to {s.calibrated.target.toFixed(0)}° (what you demonstrated, not a target).</p>}
-      {s.result && <RecommendationCard result={s.result} />}
+      {s.result && <RecommendationCard result={s.result} sessionId={s.sessionId} />}
       {s.sessionId && <p><Link className="btn" to={`/sessions/${s.sessionId}`}>View the full session summary</Link></p>}
       <section className="card">
         <h2>Show this session in Unity (optional)</h2>

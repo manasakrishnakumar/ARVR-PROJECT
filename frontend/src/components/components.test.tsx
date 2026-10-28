@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,7 +8,7 @@ const authState = { user: null as null | { username: string }, loading: false, s
 vi.mock("../context/AuthContext", () => ({ useAuth: () => authState }));
 vi.mock("../services/api", async (orig) => {
   const real = await orig<typeof import("../services/api")>();
-  return { ...real, api: { ...real.api, health: vi.fn(), login: vi.fn(), register: vi.fn() } };
+  return { ...real, api: { ...real.api, health: vi.fn(), checkin: vi.fn(), login: vi.fn(), register: vi.fn() } };
 });
 
 import { api } from "../services/api";
@@ -50,6 +50,25 @@ describe("RecommendationCard", () => {
     r.recommendation = { ...r.recommendation, action: "increase", next_level: 2 };
     render(<RecommendationCard result={r} />);
     expect(screen.getByText(/a small step up: level 2 \(was 1\)/i)).toBeInTheDocument();
+  });
+});
+
+describe("RecommendationCard pain check-in", () => {
+  it("is hidden without a session id", () => {
+    render(<RecommendationCard result={result()} />);
+    expect(screen.queryByLabelText("Pain check-in")).toBeNull();
+  });
+
+  it("sends the pain report and shows the updated, more cautious suggestion", async () => {
+    const paused = result();
+    paused.recommendation = { ...paused.recommendation, action: "pause", reasons: ["You reported pain 8/10. Stop for now."] };
+    vi.mocked(api.checkin).mockResolvedValue(paused);
+    render(<RecommendationCard result={result()} sessionId="s1" />);
+    fireEvent.change(screen.getByLabelText("Pain from 0 to 10"), { target: { value: "8" } });
+    await userEvent.click(screen.getByRole("button", { name: /save check-in/i }));
+    await waitFor(() => expect(api.checkin).toHaveBeenCalledWith("s1", 8, ""));
+    expect(await screen.findByText(/take a break/i)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/pain report/i);
   });
 });
 

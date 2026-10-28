@@ -18,6 +18,7 @@ class RecommendIn(BaseModel):
     current_level: int = Field(ge=1, le=5)
     reps: list[RepObs] = Field(max_length=500)
     history: list[HistoryItem] = Field(default_factory=list, max_length=50)  # newest first
+    pain: int | None = Field(default=None, ge=0, le=10)
 
 
 class ExerciseRef(BaseModel):
@@ -44,7 +45,7 @@ def _levels(exercise_id: str) -> dict:
 def recommend_stateless(body: RecommendIn) -> Recommendation:
     """Pure policy evaluation: no database, no account. Useful for experiments and for clients that keep their own history."""
     try:
-        return recommend(adaptive_config(), _levels(body.exercise_id), body.current_level, body.reps, body.history)
+        return recommend(adaptive_config(), _levels(body.exercise_id), body.current_level, body.reps, body.history, body.pain)
     except ValueError as e:
         raise HTTPException(422, str(e)) from e
 

@@ -56,6 +56,7 @@ export const api = {
   createSession: (exercise_id: string, difficulty: number, is_demo: boolean) =>
     post<SessionCreated>("/api/sessions", { exercise_id, difficulty, is_demo }),
   completeSession: (id: string) => post<CompleteOut>(`/api/sessions/${id}/complete`),
+  checkin: (id: string, pain: number, note: string) => post<CompleteOut>(`/api/sessions/${id}/checkin`, { pain, note }),
 
   adaptationState: (exercise_id: string) =>
     request<AdaptationState>(`/api/adaptation/state?exercise_id=${encodeURIComponent(exercise_id)}`),

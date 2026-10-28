@@ -306,7 +306,7 @@ export default function PoseLab({ exercises, user, initialExerciseId, onSessionS
       </div>
 
       {saving && <p className="muted">Saving session...</p>}
-      {result && <RecommendationCard result={result} />}
+      {result && <RecommendationCard result={result} sessionId={lastSessionId} />}
       {result && lastSessionId && <p><Link className="btn" to={`/sessions/${lastSessionId}`}>View the full session summary</Link></p>}
 
       <h3>Repetitions</h3>

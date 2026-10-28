@@ -21,6 +21,10 @@
     "quality_below": 0.3,
     "error_rate_at_least": 0.8
   },
+  "pain": {
+    "no_increase_at": 4,
+    "pause_at": 7
+  },
   "feedback_intensity": {
     "good": "low",
     "neutral": "normal",

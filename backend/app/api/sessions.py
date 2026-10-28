@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import current_user_optional
 from app.database.db import AdaptiveDecision, ExerciseSession, User, get_db
 from app.exercises.library import get_exercise
-from app.personalization.controller import Recommendation, recommend
+from app.personalization.controller import HistoryItem, Recommendation, recommend
 from app.services.adaptive_service import (MAX_REPS_PER_SESSION, adaptive_config, add_repetition, history_for,
                                            rep_observations)
 
@@ -30,6 +30,8 @@ class SessionOut(BaseModel):
     started_at: datetime
     ended_at: datetime | None
     summary: dict
+    pain: int | None = None
+    note: str | None = None
     model_config = {"from_attributes": True}
 
 
@@ -44,6 +46,11 @@ class RepIn(BaseModel):
     reliable: bool = True
     counted: bool = False
     features: dict[str, float] = Field(default_factory=dict, max_length=60)
+
+
+class CompleteIn(BaseModel):
+    pain: int | None = Field(default=None, ge=0, le=10)  # optional self-report after the session
+    note: str | None = Field(default=None, max_length=500)  # free text; do not enter medical details
 
 
 class CompleteOut(BaseModel):
@@ -148,8 +155,8 @@ def add_repetitions(session_id: str, reps: list[RepIn] = Body(max_length=MAX_REP
 
 
 @router.post("/sessions/{session_id}/complete", response_model=CompleteOut)
-def complete_session(session_id: str, user: User | None = Depends(current_user_optional),
-                     db: Session = Depends(get_db)) -> CompleteOut:
+def complete_session(session_id: str, body: CompleteIn | None = Body(default=None),
+                     user: User | None = Depends(current_user_optional), db: Session = Depends(get_db)) -> CompleteOut:
     s = owned_session(db, session_id, user)
     if s.ended_at is not None:
         raise HTTPException(409, "Session already completed")
@@ -157,10 +164,13 @@ def complete_session(session_id: str, user: User | None = Depends(current_user_o
     assert ex is not None
     persistent = s.user_id is not None and not s.is_demo
     history = history_for(db, s.user_id, s.exercise_id) if persistent else []  # type: ignore[arg-type]
-    rec = recommend(adaptive_config(), ex.difficulty_levels, s.difficulty, rep_observations(s), history)
+    rec = recommend(adaptive_config(), ex.difficulty_levels, s.difficulty, rep_observations(s), history,
+                    pain=body.pain if body else None)
+    if body:
+        s.pain, s.note = body.pain, (body.note or None)
     s.ended_at = datetime.now(timezone.utc)
     s.summary = {"metrics": rec.metrics.model_dump(), "classification": rec.classification, "action": rec.action,
-                 "level": s.difficulty, "next_level": rec.next_level}
+                 "level": s.difficulty, "next_level": rec.next_level, "pain": s.pain}
     if persistent:
         db.add(AdaptiveDecision(user_id=s.user_id, exercise_id=s.exercise_id, session_id=s.id, from_level=s.difficulty,
                                 to_level=rec.next_level, action=rec.action, classification=rec.classification,
@@ -168,3 +178,30 @@ def complete_session(session_id: str, user: User | None = Depends(current_user_o
     db.commit()
     return CompleteOut(session=SessionOut.model_validate(s), recommendation=rec, history_used=persistent,
                        saved_to_history=persistent)
+
+
+@router.post("/sessions/{session_id}/checkin", response_model=CompleteOut)
+def checkin(session_id: str, body: CompleteIn, user: User | None = Depends(current_user_optional),
+            db: Session = Depends(get_db)) -> CompleteOut:
+    """Add the post-session pain / note after the session was completed, and re-evaluate the suggestion with it.
+    Pain can only make the suggestion more cautious."""
+    s = owned_session(db, session_id, user)
+    if s.ended_at is None:
+        raise HTTPException(409, "Complete the session first")
+    ex = get_exercise(s.exercise_id)
+    assert ex is not None
+    persistent = s.user_id is not None and not s.is_demo
+    d = db.scalar(select(AdaptiveDecision).where(AdaptiveDecision.session_id == s.id)) if persistent else None
+    history: list = []
+    if persistent and d is not None:  # only sessions before this one count as history
+        older = db.scalars(select(AdaptiveDecision).where(
+            AdaptiveDecision.user_id == s.user_id, AdaptiveDecision.exercise_id == s.exercise_id,
+            AdaptiveDecision.created_at < d.created_at).order_by(AdaptiveDecision.created_at.desc()).limit(20)).all()
+        history = [HistoryItem(level=r.from_level, classification=r.classification, action=r.action) for r in older]
+    rec = recommend(adaptive_config(), ex.difficulty_levels, s.difficulty, rep_observations(s), history, pain=body.pain)
+    s.pain, s.note = body.pain, (body.note or None)
+    s.summary = {**(s.summary or {}), "action": rec.action, "next_level": rec.next_level, "pain": body.pain}
+    if d is not None:
+        d.action, d.to_level, d.reasons = rec.action, rec.next_level, rec.reasons
+    db.commit()
+    return CompleteOut(session=SessionOut.model_validate(s), recommendation=rec, history_used=persistent, saved_to_history=persistent)

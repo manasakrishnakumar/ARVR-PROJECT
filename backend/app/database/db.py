@@ -50,6 +50,8 @@ class ExerciseSession(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     summary: Mapped[dict] = mapped_column(JSON, default=dict)
+    pain: Mapped[int | None] = mapped_column(Integer, nullable=True)  # self-reported 0-10 after the session
+    note: Mapped[str | None] = mapped_column(String(500), nullable=True)  # free text; do not enter medical details
     repetitions: Mapped[list["Repetition"]] = relationship(back_populates="session", cascade="all, delete-orphan",
                                                            order_by="Repetition.index")
 
@@ -89,7 +91,7 @@ engine = create_engine(settings.database_url, connect_args={"check_same_thread":
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 # columns added after the first prototype: older local databases are upgraded in place, never dropped
-_ADDED_COLUMNS = {"sessions": [("ws_key", "VARCHAR(64)")],
+_ADDED_COLUMNS = {"sessions": [("ws_key", "VARCHAR(64)"), ("pain", "INTEGER"), ("note", "VARCHAR(500)")],
                   "repetitions": [("counted", "BOOLEAN DEFAULT 0"), ("reliable", "BOOLEAN DEFAULT 1")]}
 
 

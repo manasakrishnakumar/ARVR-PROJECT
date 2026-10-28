@@ -47,6 +47,18 @@ class PauseRule(BaseModel):
     error_rate_at_least: float = Field(ge=0, le=1)
 
 
+class PainRule(BaseModel):
+    """Self-reported pain (0-10) after a session. Pain only ever makes the suggestion more cautious."""
+    no_increase_at: int = Field(default=4, ge=0, le=10)
+    pause_at: int = Field(default=7, ge=0, le=10)
+
+    @model_validator(mode="after")
+    def _ordered(self) -> "PainRule":
+        if self.pause_at < self.no_increase_at:
+            raise ValueError("pain.pause_at must not be below pain.no_increase_at")
+        return self
+
+
 class AdaptiveConfig(BaseModel):
     min_level: int = Field(ge=1)
     default_level: int = Field(ge=1)
@@ -56,6 +68,7 @@ class AdaptiveConfig(BaseModel):
     increase: IncreaseRule
     decrease: DecreaseRule
     pause: PauseRule
+    pain: PainRule = PainRule()
     feedback_intensity: dict[str, str]
 
     @model_validator(mode="after")
@@ -166,7 +179,7 @@ def _sessions_at_level(history: list[HistoryItem], level: int) -> int:
 
 
 def recommend(cfg: AdaptiveConfig, levels: dict[str, dict], current_level: int, reps: list[RepObs],
-              history: list[HistoryItem] | None = None) -> Recommendation:
+              history: list[HistoryItem] | None = None, pain: int | None = None) -> Recommendation:
     """levels: the exercise's difficulty_levels (keys '1', '2', ...). history: past sessions of this exercise, newest first."""
     available = sorted(int(k) for k in levels)
     if current_level not in available:
@@ -216,6 +229,16 @@ def recommend(cfg: AdaptiveConfig, levels: dict[str, dict], current_level: int, 
                            f"{cfg.increase.confirm_sessions} confirming sessions needed before raising the level.")
     else:
         reasons.append(f"Moderate performance (score {metrics.quality:.2f}, {metrics.error_rate:.0%} flagged): keeping level {current_level}.")
+
+    if pain is not None and pain >= cfg.pain.pause_at:
+        action, next_level = "pause", current_level
+        reasons.append(f"You reported pain {pain}/10. Stop for now, keep the level, and talk to your rehabilitation professional "
+                       "before continuing. Difficulty is never raised after reported pain.")
+    elif pain is not None and pain >= cfg.pain.no_increase_at and next_level > current_level:
+        action, next_level = "maintain", current_level
+        reasons.append(f"You reported pain {pain}/10, so the level is not raised even though the session went well.")
+    elif pain is not None and pain >= cfg.pain.no_increase_at:
+        reasons.append(f"You reported pain {pain}/10. Take care and stop if it gets worse.")
 
     nxt = levels[str(next_level)]
     return Recommendation(
