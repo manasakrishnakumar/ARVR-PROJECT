@@ -46,3 +46,16 @@ export function ghostPose(ex: Exercise, progress: number, user: Landmark[] | nul
   const k = uTorso / tTorso;
   return t.map((p) => ({ ...p, x: uS.x + (p.x - tS.x) * k, y: uS.y + (p.y - tS.y) * k }));
 }
+
+const FLASH_TEXT: Record<string, string> = {
+  acceptable: "Good", insufficient_range: "Go further", incomplete_repetition: "Finish the movement", too_fast: "Slower",
+  uncontrolled: "Steadier", insufficient_data: "Not seen clearly",
+};
+
+/** Large on-screen confirmation shown briefly after each repetition. Colour: green for an acceptable repetition, amber otherwise. */
+export function repFlash(rep: { counted: boolean; label: string }): { text: string; colour: string } {
+  const good = rep.counted && rep.label === "acceptable";
+  const known = FLASH_TEXT[rep.label];
+  const text = known ? (rep.counted ? known : `${known} (not counted)`) : rep.counted ? "Counted" : "Not counted";
+  return { text, colour: good ? "#22c55e" : "#f59e0b" };
+}

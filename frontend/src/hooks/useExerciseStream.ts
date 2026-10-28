@@ -100,10 +100,10 @@ export function useExerciseStream(exercise: Exercise | null, level: number, vide
 
   const startDemo = async () => { stop(); setError(null); await open(true); estRef.current = new DemoEstimator(); setMode("demo"); loop("demo"); };
 
-  const startCamera = async () => {
+  const startCamera = async (facing: "user" | "environment" = "user") => {
     stop(); setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: facing }, audio: false });
       streamRef.current = stream;
       stream.getVideoTracks()[0].addEventListener("ended", () => { void stopAndSave(); setError("Camera disconnected."); });
       const v = videoRef.current!;

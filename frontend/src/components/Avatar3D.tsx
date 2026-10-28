@@ -1,8 +1,9 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Component, useMemo, useRef, type MutableRefObject, type ReactNode } from "react";
+import { Component, useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import * as THREE from "three";
 import { MIN_CONFIDENCE } from "../pose/angles";
 import { SKELETON, type Landmark } from "../pose/types";
+import { detectVr, VR_ROOM_OFFSET, type VrSupport } from "../pose/xr";
 
 const JOINTS = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
 
@@ -76,14 +77,69 @@ export class SceneBoundary extends Component<{ children: ReactNode; fallback: Re
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 
-export default function Scene3D({ user, trainer }: { user: MutableRefObject<Landmark[] | null>; trainer: MutableRefObject<Landmark[] | null> }) {
+/** A floating panel with the session text, drawn to a canvas texture. Readable in VR, where the page HUD is not visible. */
+function HudPanel({ lines }: { lines: MutableRefObject<string[]> }) {
+  const mesh = useRef<THREE.Mesh>(null);
+  const { canvas, tex } = useMemo(() => {
+    const c = document.createElement("canvas"); c.width = 512; c.height = 256;
+    return { canvas: c, tex: new THREE.CanvasTexture(c) };
+  }, []);
+  const last = useRef("");
+  useFrame(() => {
+    const key = lines.current.join("|");
+    if (key === last.current) return;
+    last.current = key;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "rgba(11,18,24,.85)"; ctx.fillRect(0, 0, 512, 256);
+    ctx.fillStyle = "#fff"; ctx.textBaseline = "top";
+    lines.current.slice(0, 3).forEach((l, i) => { ctx.font = i === 0 ? "bold 64px system-ui" : "34px system-ui"; ctx.fillText(l.slice(0, 34), 20, 20 + (i === 0 ? 0 : 60 + (i - 1) * 60)); });
+    tex.needsUpdate = true;
+  });
+  return <mesh ref={mesh} position={[0, 1.3, 0]}><planeGeometry args={[1.6, 0.8]} /><meshBasicMaterial map={tex} transparent /></mesh>;
+}
+
+export default function Scene3D({ user, trainer, hud }: { user: MutableRefObject<Landmark[] | null>; trainer: MutableRefObject<Landmark[] | null>; hud?: MutableRefObject<string[]> }) {
+  const gl = useRef<THREE.WebGLRenderer | null>(null);
+  const session = useRef<XRSession | null>(null);
+  const [support, setSupport] = useState<VrSupport>("checking");
+  const [inVr, setInVr] = useState(false);
+  const [vrError, setVrError] = useState<string | null>(null);
+  useEffect(() => { void detectVr().then(setSupport); }, []);
+
+  const toggleVr = async () => {
+    setVrError(null);
+    try {
+      if (session.current) { await session.current.end(); return; }
+      const renderer = gl.current, xr = (navigator as unknown as { xr?: XRSystem }).xr;
+      if (!renderer || !xr) return;
+      const s = await xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "bounded-floor"] });
+      renderer.xr.setReferenceSpaceType("local-floor");
+      await renderer.xr.setSession(s);
+      session.current = s; setInVr(true);
+      s.addEventListener("end", () => { session.current = null; setInVr(false); });
+    } catch (e) { setVrError(`Could not start VR: ${(e as Error).message}`); }
+  };
+
   return (
-    <Canvas camera={{ position: [0, 0.6, 3.4], fov: 50 }} style={{ height: 420, borderRadius: 10, background: "#0b1218" }}>
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[2, 4, 3]} intensity={1.1} />
-      <Room />
-      <Figure source={trainer} color="#fbbf24" xOffset={-1.1} />
-      <Figure source={user} color="#2dd4bf" xOffset={1.1} />
-    </Canvas>
+    <>
+      <Canvas camera={{ position: [0, 0.6, 3.4], fov: 50 }} style={{ height: 420, borderRadius: 10, background: "#0b1218" }}
+              onCreated={({ gl: r }) => { r.xr.enabled = true; gl.current = r; }}>
+        <ambientLight intensity={0.7} />
+        <directionalLight position={[2, 4, 3]} intensity={1.1} />
+        <group position={inVr ? VR_ROOM_OFFSET : [0, 0, 0]}>
+          <Room />
+          <Figure source={trainer} color="#fbbf24" xOffset={-1.1} />
+          <Figure source={user} color="#2dd4bf" xOffset={1.1} />
+          {hud && inVr && <HudPanel lines={hud} />}
+        </group>
+      </Canvas>
+      <p className="muted">
+        {support === "supported" && <button type="button" onClick={() => void toggleVr()}>{inVr ? "Exit VR" : "Enter VR"}</button>}
+        {support === "supported" ? " " : "Immersive VR: "}
+        {support === "checking" ? "checking this device..." : support === "unsupported" ? "no WebXR headset available here (the desktop 3D view above is used)." :
+          "reported by this browser. UNTESTED: no headset was available when this was built."}
+      </p>
+      {vrError && <p className="error" role="alert">{vrError}</p>}
+    </>
   );
 }

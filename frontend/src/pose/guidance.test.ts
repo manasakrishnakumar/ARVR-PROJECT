@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { exerciseSide, ghostPose, jointState, setupHint } from "./guidance";
+import { exerciseSide, ghostPose, jointState, repFlash, setupHint } from "./guidance";
 import { repCue } from "./speech";
 import { standingPose } from "./trainer";
 import type { Exercise } from "../types/api";
@@ -77,5 +77,17 @@ describe("exerciseSide and voice cues", () => {
     expect(repCue({ counted: false, label: "insufficient_range" }, 2, 5)).toBe("Go a little further.");
     expect(repCue({ counted: true, label: "too_fast" }, 2, 5)).toBe("2. Slow down.");
     expect(repCue({ counted: false, label: "something_new" }, 2, 5)).toBe("");
+  });
+});
+
+describe("repFlash", () => {
+  it("is green for an acceptable counted repetition", () => {
+    expect(repFlash({ counted: true, label: "acceptable" })).toEqual({ text: "Good", colour: "#22c55e" });
+  });
+  it("is amber with a correction for flagged ones, and says when it was not counted", () => {
+    expect(repFlash({ counted: true, label: "too_fast" })).toEqual({ text: "Slower", colour: "#f59e0b" });
+    expect(repFlash({ counted: false, label: "insufficient_range" }).text).toBe("Go further (not counted)");
+    expect(repFlash({ counted: false, label: "mystery" }).text).toBe("Not counted");
+    expect(repFlash({ counted: true, label: "mystery" }).text).toBe("Counted");
   });
 });

@@ -10,6 +10,7 @@ import { trainerPose, trainerProgress } from "../pose/trainer";
 import { buildRelayFrame, newRoomCode, RelayPublisher } from "../services/relay";
 import type { Landmark } from "../pose/types";
 import { repCue, speak } from "../pose/speech";
+import { hudText } from "../pose/xr";
 
 /** Desktop 3D rehabilitation room: a virtual trainer demonstrates the movement beside an avatar that mirrors you.
  *  Works in any browser without a headset. The pose pipeline is independent of the 3D scene: if 3D fails, counting and feedback continue. */
@@ -65,6 +66,8 @@ export default function Room3D() {
     if (voiceRef.current && s.lastRep) speak(repCue(s.lastRep, s.live?.counted_reps ?? s.repCount, s.targetReps));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.lastRep]);
+  const hudRef = useRef<string[]>([]);
+  hudRef.current = hudText(s.live?.counted_reps ?? 0, s.targetReps, s.live?.phase ?? "waiting", s.lastRep?.feedback ?? "");
   const running = s.mode !== "idle";
   if (loading) return <p className="muted">Loading...</p>;
   const lv = exercise?.difficulty_levels ?? {};
@@ -73,7 +76,7 @@ export default function Room3D() {
       <h1>3D rehabilitation room</h1>
       <p className="muted">
         Desktop 3D view (no headset needed). The amber figure is a virtual trainer showing the illustrative movement; the teal figure mirrors you.
-        Immersive VR is not part of this version.
+        An experimental Enter VR button appears below the view when the browser reports a VR headset (untested without one).
       </p>
       <div className="row">
         <label>Exercise{" "}
@@ -86,7 +89,7 @@ export default function Room3D() {
             {Object.keys(lv).map((l) => <option key={l} value={l}>Level {l}</option>)}
           </select>
         </label>
-        <button className="primary" onClick={s.startCamera} disabled={running}>Start camera</button>
+        <button className="primary" onClick={() => void s.startCamera()} disabled={running}>Start camera</button>
         <button onClick={s.startDemo} disabled={running}>Synthetic demo</button>
         <button onClick={() => void s.stopAndSave()} disabled={!running}>Stop and save</button>
         <label><input type="checkbox" checked={voice} onChange={(e) => setVoice(e.target.checked)} /> Voice cues</label>
@@ -96,7 +99,7 @@ export default function Room3D() {
 
       <video ref={videoRef} className="hidden" playsInline muted />
       <SceneBoundary fallback={<p className="notice error-banner" role="alert">The 3D view could not start (WebGL may be unavailable). Counting and feedback below still work; you can also use the Live session page.</p>}>
-        <Scene3D user={s.landmarksRef} trainer={trainerRef} />
+        <Scene3D user={s.landmarksRef} trainer={trainerRef} hud={hudRef} />
       </SceneBoundary>
 
       <div className="stats-grid">
