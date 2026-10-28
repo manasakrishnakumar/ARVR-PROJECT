@@ -81,7 +81,7 @@
 - [x] **Own-recording workflow** (so the missing "own webcam" data can be collected): /collect page (consent first, participant code not a name, landmark numbers only, nothing uploaded) + `python -m app.ml.cli import-own` (validation, constant-rate resampling without inventing data across gaps, auto-calibrated segmentation, take-level labels). 14 backend tests. NOT used yet: no recordings of your own exist.
 - [x] **Documentation set**: architecture, installation (+ scripts/setup.ps1, verified), user guide (+ manual webcam test protocol), research methodology (+ contribution statement), API reference, limitations and safety, thesis outline.
 - [x] Research page now renders counting, angle accuracy, simulation, and threshold/calibration results.
-- [x] Tests: 147 backend + 30 frontend pass.
+- [x] Tests: 171 backend + 36 frontend + 15 Unity edit-mode pass.
 
 ### Limitations that remain (cannot be fixed by code alone)
 - [ ] The **live webcam path has not been run on a real webcam** by the author: manual protocol in docs/user-guide.md is for you to run.
@@ -90,7 +90,7 @@
 - [ ] **ML is not used in the live loop** (by design; see limitations doc). A temporal model (LSTM/GRU) was not built.
 - [ ] **AR camera-overlay mode, desktop 3D room, immersive VR/WebXR, Unity client** (Phases 7-8): not built; no headset.
 - [ ] Automated browser end-to-end tests (Playwright) are not set up; the real-camera path is manual.
-- [ ] Local-prototype security (no HTTPS, rate limiting).
+- [x] Failed sign-ins are rate-limited (tested). Still no HTTPS or general API rate limiting (local prototype).
 
 ## Phase 7 - 3D room, AR camera overlay, Unity scaffold
 - [x] **Desktop 3D room** (/room, Three.js via react-three-fiber, no headset): room, a virtual trainer (amber) looping the exercise's illustrative movement beside an avatar (teal) that mirrors the user; live repetitions, phase, last-repetition result, level, feedback and the same adaptive recommendation card; saves sessions like the live page. A scene error boundary keeps counting and feedback working if WebGL fails. Verified in the browser with the synthetic demo (WebGL on, avatars visible, repetitions counted). Shared `useExerciseStream` hook; 3 new tests for the trainer pose (33 frontend tests pass).

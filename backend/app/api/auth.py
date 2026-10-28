@@ -1,7 +1,9 @@
+import time
+from collections import deque
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -66,11 +68,48 @@ def register(body: RegisterIn, db: Session = Depends(get_db)) -> AuthOut:
     return AuthOut(token=_issue_token(db, user), user=UserOut.model_validate(user))
 
 
+MAX_FAILURES = 5
+LOCKOUT_WINDOW_S = 300.0
+_failures: dict[str, deque[float]] = {}
+_now = time.monotonic  # replaceable in tests
+
+
+def _lockout_key(username: str, request: Request) -> str:
+    return f"{username.lower()}|{request.client.host if request.client else '?'}"
+
+
+def _check_not_locked(key: str) -> None:
+    """At most MAX_FAILURES failed sign-ins per username and address in LOCKOUT_WINDOW_S (counted for unknown usernames too,
+    so the limit does not reveal which accounts exist). Even the correct password is refused while locked."""
+    q = _failures.get(key)
+    if not q:
+        return
+    now = _now()
+    while q and now - q[0] > LOCKOUT_WINDOW_S:
+        q.popleft()
+    if len(q) >= MAX_FAILURES:
+        retry = int(LOCKOUT_WINDOW_S - (now - q[0])) + 1
+        raise HTTPException(429, "Too many failed sign-in attempts. Try again in a few minutes.", headers={"Retry-After": str(retry)})
+    if not q:
+        _failures.pop(key, None)
+
+
+def _record_failure(key: str) -> None:
+    if len(_failures) > 10000:  # bounded memory: drop the oldest entries
+        for k in list(_failures)[:1000]:
+            _failures.pop(k, None)
+    _failures.setdefault(key, deque()).append(_now())
+
+
 @router.post("/auth/login", response_model=AuthOut)
-def login(body: Credentials, db: Session = Depends(get_db)) -> AuthOut:
+def login(body: Credentials, request: Request, db: Session = Depends(get_db)) -> AuthOut:
+    key = _lockout_key(body.username, request)
+    _check_not_locked(key)
     user = db.scalar(select(User).where(User.username == body.username))
     if not verify_password(body.password, user.password_hash if user else None) or user is None:
+        _record_failure(key)
         raise HTTPException(401, "Incorrect username or password")  # same message and work for both cases
+    _failures.pop(key, None)
     return AuthOut(token=_issue_token(db, user), user=UserOut.model_validate(user))
 
 

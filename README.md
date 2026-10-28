@@ -23,7 +23,7 @@ npm run build
 ```
 
 ## Pages
-`/` landing · `/exercises` library · `/session` live camera session (or synthetic demo) · `/sessions/:id` session summary · `/dashboard` progress charts and CSV export (signed-in) · `/research` evaluation results · `/settings` privacy, profile, data export/deletion · `/account` sign in / create account. Guest mode works without an account but saves nothing.
+`/` landing · `/exercises` library · `/session` live camera session (or synthetic demo) · `/room` 3D room · `/ar` AR camera overlay · `/analysis` pose analysis · `/collect` record data · `/sessions/:id` session summary · `/dashboard` progress charts and CSV export (signed-in) · `/research` evaluation results · `/settings` privacy, profile, data export/deletion · `/account` sign in / create account. Guest mode works without an account but saves nothing.
 
 ## Useful commands (from `backend`, PowerShell)
 ```powershell

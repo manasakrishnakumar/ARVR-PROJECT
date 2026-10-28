@@ -7,10 +7,14 @@ ARVR is a **research prototype, not a medical device**. It cannot tell whether a
 2. Press **Synthetic demo** to see how it works with no camera (a drawn figure; only elbow flexion moves), or **Start camera** and allow camera access.
 3. Stand where your whole body (or at least the exercising limb and the joints around it) is visible, in good light, 1.5 to 3 metres from the camera. Face the camera for arm exercises; stand side-on for squats and sit-to-stand.
 4. Move. The page shows the skeleton, the current phase, repetitions against the target, the joint angle, and one short tip after each repetition. Turn on **Audio feedback** for spoken tips.
-5. Press **Stop and save**: you get a summary and a suggested level for next time. Guest and demo sessions are **not saved**; the suggestion uses that session alone.
+5. Leave **Calibrate to my range** ticked (default): for the first 5 seconds or so do 2 or 3 slow, comfortable repetitions; the app measures the range you actually move in and counts relative to it (it describes what you did, not a medical target). Repetitions done while calibrating are still counted.
+6. Press **Stop and save**: you get a summary and a suggested level for next time. Guest and demo sessions are **not saved**; the suggestion uses that session alone.
 
 ## With an account
 Create one on **Sign in** (a username and a password you use nowhere else; no medical details). Your sessions and suggestions are saved on this computer. The **Live session** page then pre-selects the level suggested after your last session; you may choose another level, and **Reset to default level** is always available.
+
+## Unity client (optional)
+A Unity desktop client shows the same room with all exercises; see `unity-client/README.md`. For live webcam pose in Unity, open the web **3D room**, tick **Share live pose**, start the camera, and enter the room code in Unity.
 
 ## What the suggestions mean
 After each real session the app judges only the repetitions it could measure reliably: good (steady, complete, few flagged), moderate, poor, or very poor. It raises the level by one step only after **two good sessions in a row** at the same level, lowers it only after **two poor sessions in a row**, suggests a break after a very difficult session, and never raises the level when it could not measure you reliably. Every suggestion lists its reasons. It is a suggestion, not a prescription. Details: `docs/adaptive-controller.md`.
@@ -22,6 +26,8 @@ After each real session the app judges only the repetitions it could measure rel
 | Exercises | the library: illustrative range diagrams, levels, what the system can notice |
 | Live session | the exercise session described above |
 | Pose analysis | check your camera setup: skeleton, per-landmark confidence, joint-angle trace, frame rate, detection rate. Nothing is recorded |
+| 3D room | desktop 3D view with a virtual trainer beside an avatar that mirrors you; same counting and suggestions; optional **Share live pose** to the Unity client |
+| AR overlay | guidance drawn over your camera picture (target ray, angle, counters). A camera overlay, **not** immersive AR |
 | Dashboard | (signed in) totals, score and flagged share, difficulty history, movement range, repetitions, issue categories, session table, CSV export, filters |
 | Session summary | one session in detail, including every repetition and the reasons for the suggestion |
 | Research | the project's own evaluation results, with caveats |
