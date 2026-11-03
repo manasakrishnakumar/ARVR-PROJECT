@@ -13,6 +13,9 @@ ARVR is a **research prototype, not a medical device**. It cannot tell whether a
 ## With an account
 Create one on **Sign in** (a username and a password you use nowhere else; no medical details). Your sessions and suggestions are saved on this computer. The **Live session** page then pre-selects the level suggested after your last session; you may choose another level, and **Reset to default level** is always available.
 
+## Using a phone (optional)
+On the same Wi-Fi, set up local HTTPS (`docs/installation.md`), open `https://<computer's IP>:5173` (or `:8443` with Docker) on the phone, accept the certificate warning, and use the **AR overlay** page with the back camera propped up. This has not been tested on a phone yet; please note what you observe.
+
 ## Unity client (optional)
 A Unity desktop client shows the same room with all exercises; see `unity-client/README.md`. For live webcam pose in Unity, open the web **3D room**, tick **Share live pose**, start the camera, and enter the room code in Unity.
 

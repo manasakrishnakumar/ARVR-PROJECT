@@ -128,12 +128,19 @@
 - [x] **Backup and restore** (JSON, ownership-safe, idempotent) and a **weekly activity summary** on the dashboard: 5 backend tests, 3 frontend tests.
 - [x] **Printable session report** (print stylesheet, "Print or save as PDF"), pain and note shown on the summary.
 - [x] **Three more exercises** (hip abduction, hip flexion, seated knee extension; 9 in total) and a synthetic demo that can play any exercise; 10 backend tests. The synthetic training dataset is pinned to the original six exercises so earlier results stay reproducible. New exercise ranges are placeholders, checked only with synthetic movements.
-- [x] **General API rate limiting** (300/min per address) and **Docker files** (`docker-compose.yml`; written, **not built or run**: the Docker engine was not running).
-- [x] Tests now: 199 backend + 66 frontend + 15 Unity edit-mode (280); the frontend builds.
+- [x] **General API rate limiting** (300/min per address).
+- [x] Tests now: 203 backend + 67 frontend + 15 Unity edit-mode (285); the frontend builds.
 
 ## Phase 9b - Performance measurement and thesis draft
 - [x] `python -m app.ml.cli perf`: backend analysis cost (about 4 microseconds per angle sample) and WebSocket round trip (mean 0.76 ms, p99 1.5 ms) measured and written to `docs/results/performance.json`, shown on the Research page. In-process test client on one computer: excludes the network and the browser's pose estimation, which need a camera and were **not measured**. 1 backend test, 1 frontend test.
 - [x] `docs/thesis-draft.md`: working draft of the abstract and chapters 1, 3-8 and appendices from the measured results; chapter 2 (literature) intentionally left for verified sources.
 
+## Phase 10 - Docker and local HTTPS (done 2026-11-03)
+- [x] **Docker**: `docker compose up --build` builds both images; verified the page, API (9 exercises, registration, 8 result files), WebSocket through nginx, and persistence of an account across a backend restart; the volume is removed with `down -v`.
+- [x] **HTTPS (local)**: `scripts/make_dev_cert.ps1` (self-signed certificate for localhost and this computer's IPs, git-ignored), `ARVR_HTTPS=1` for the Vite dev server, and `docker-compose.https.yml` (nginx TLS on 8443). Verified with curl: page, API and `wss` over HTTPS (dev server) and page + API over HTTPS (Docker). Backend security headers (nosniff, frame deny, no referrer, camera policy, HSTS only on https) with 3 tests.
+- [ ] Not verified: opening the app from a phone, a real camera over HTTPS, a browser-trusted certificate. Self-signed HTTPS is for your own network only, not the internet.
+
 ## Still not done
-Tested immersive VR (no headset), real-camera/phone verification of the AR page, hands-on Unity Play-mode check of the newer features, clinician review, any study with people, HTTPS, Playwright end-to-end tests, LSTM/GRU baseline, Docker build.
+Full checklist with how-to steps: `docs/remaining-work.md`.
+
+Tested immersive VR (no headset), real-camera/phone verification of the AR page, hands-on Unity Play-mode check of the newer features, clinician review, any study with people, an internet-grade deployment, Playwright end-to-end tests, LSTM/GRU baseline.

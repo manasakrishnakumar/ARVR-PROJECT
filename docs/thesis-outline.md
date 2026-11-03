@@ -36,6 +36,7 @@ Conclusions per RQ; future work list (methodology section 10); recommendations f
 A. API reference · B. Exercise definitions · C. Adaptive controller configuration · D. Dataset documentation · E. Full result tables · F. User guide and manual test protocol · G. Ethics and consent templates (for the record-data tool; use your institution's templates).
 
 ## Checklist before submission
+(What is still open is listed in `docs/remaining-work.md`.)
 - Every number traced to a file in `docs/results/` or a test.
 - Claims match `docs/limitations-and-safety.md` (no recovery or clinical claims).
 - Dataset citations and licences verified on their Zenodo pages.

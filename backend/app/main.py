@@ -7,6 +7,7 @@ from app.api import adaptation, analytics, auth, mydata, relay, research, sessio
 from app.api.routes import router
 from app.core.config import settings
 from app.core.ratelimit import RateLimitMiddleware
+from app.core.security_headers import SecurityHeadersMiddleware
 from app.database.db import init_db
 
 
@@ -19,5 +20,6 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title=settings.app_name, version=settings.version, lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_methods=["*"], allow_headers=["*"])
 app.add_middleware(RateLimitMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 for r in (router, auth.router, sessions.router, adaptation.router, analytics.router, research.router, relay.router, mydata.router):
     app.include_router(r)

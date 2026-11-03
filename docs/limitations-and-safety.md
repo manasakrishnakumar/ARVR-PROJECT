@@ -12,7 +12,7 @@ A working research prototype with a tested software pipeline and **preliminary, 
 ## What has and has not been verified
 | Area | Verified | Not verified |
 |---|---|---|
-| Software behaviour | about 280 automated tests (199 backend, 66 frontend, 15 Unity edit-mode): angle maths, missing/low-confidence landmarks, counter, assessment, controller safety bounds, API validation and ownership, persistence, WebSocket, data deletion, importers, evaluation code | behaviour on your particular camera, light and body: run the manual protocol in `docs/user-guide.md` |
+| Software behaviour | about 285 automated tests (203 backend, 67 frontend, 15 Unity edit-mode): angle maths, missing/low-confidence landmarks, counter, assessment, controller safety bounds, API validation and ownership, persistence, WebSocket, data deletion, importers, evaluation code | behaviour on your particular camera, light and body: run the manual protocol in `docs/user-guide.md` |
 | Real camera | pose model runs in the browser; skeleton overlay checked on real video frames (REHAB24-6) | **the live webcam path has not been run on a real webcam by the author**; the demo mode and recorded videos were used |
 | Joint angles | against optical motion capture on 49,171 frames of REHAB24-6: MAE 8.0°, RMSE 14.2°, bias -2.1°, r = 0.97; frames aligned (lag 0); shoulder abduction MAE 8.9° (bias -7.5°), squat 6.8° (bias +5.2°); one camera 9.0°, the other 4.3° | accuracy for other bodies, clothing, cameras, or true 3D angles. Part of the error is definitional (mocap joint centres vs MediaPipe landmarks). These are 2D image-plane angles, not clinical measurements |
 | Repetition counting | against labelled repetition boundaries in two public datasets | people with impaired movement, slow/partial repetitions, other setups. With illustrative angles F1 0.90 and mean count error 1.0 on REHAB26; calibrating the range from the recording itself gives F1 0.97 and error 0.2 (the live app now offers this as a default-on option, not yet evaluated on real live sessions) |
@@ -33,7 +33,7 @@ A working research prototype with a tested software pipeline and **preliminary, 
 A study with consent and ethics approval on the target population, labelled by clinicians; live range calibration; a clinician review of thresholds and error definitions; and tests on real hardware by the person who will use the system.
 
 ## API rate limiting
-Besides the sign-in lockout, every HTTP client address is limited to 300 requests per minute (HTTP 429 with `Retry-After`). This is a basic guard for a local app, not protection for an internet-facing service. There is still no HTTPS; do not expose the backend beyond this computer.
+Besides the sign-in lockout, every HTTP client address is limited to 300 requests per minute (HTTP 429 with `Retry-After`). This is a basic guard for a local app, not protection for an internet-facing service. Optional local HTTPS with a self-signed certificate is available (`docs/installation.md`) so a phone on your Wi-Fi can use the camera; do not expose the backend to the internet.
 
 ## Pain check-in, new exercises, and VR
 - **Pain**: the check-in is self-reported and simple. It makes suggestions more cautious (no raise at 4/10 or more, pause at 7/10 or more) but cannot tell whether a movement is safe for you. Thresholds are illustrative.
@@ -41,3 +41,6 @@ Besides the sign-in lockout, every HTTP client address is limited to 300 request
 - **Immersive VR** (web "Enter VR", Unity OpenXR): built but **never tried on a headset**. The camera-overlay AR page and the desktop 3D room are the supported experiences. Immersive headset AR with body tracking is not possible from a browser, because WebXR does not expose the camera frames pose estimation needs.
 - **Ghost trainer, joint colours and setup hints** use the 2D camera landmarks; they guide, they do not judge safety. Voice cues use the browser's speech synthesis, whose voices vary by device.
 - **Backup files** are plain JSON on your computer; protect them like any health-related file.
+
+## What is still unverified
+Real webcam and phone use, newer Unity features by hand, own-recording evaluation, clinician review, any study with participants, and VR on a headset: see `docs/remaining-work.md`.
