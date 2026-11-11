@@ -25,6 +25,13 @@ Nine illustrative exercises: elbow flexion, shoulder abduction, shoulder flexion
 ## Display options
 The **A+** and **Contrast** buttons in the top bar give larger text and a high-contrast theme (remembered in this browser only). Every control works from the keyboard.
 
+## Interactive touches
+- **Try it** (home page): drag the figure's arms or use the slider; a repetition counts after you reach 90 degrees and come back below 20. It is a toy to show the idea (no camera, nothing sent); reach 5 for a confetti burst.
+- **Ctrl + K** (or **/**) opens a page switcher: type, arrow keys, Enter.
+- **Theme button** (top bar): cycles automatic, light, dark (remembered in this browser).
+- **Dashboard**: a 7-day strip, a day-streak flame and fun milestones, all computed from your own saved sessions; they say nothing about health. The session summary shows confetti only for a real session that hit its target with a score of 0.8 or more.
+- All motion is switched off if your system asks for reduced motion.
+
 ## What the suggestions mean
 After each real session the app judges only the repetitions it could measure reliably: good (steady, complete, few flagged), moderate, poor, or very poor. It raises the level by one step only after **two good sessions in a row** at the same level, lowers it only after **two poor sessions in a row**, suggests a break after a very difficult session, and never raises the level when it could not measure you reliably. Every suggestion lists its reasons. It is a suggestion, not a prescription. Details: `docs/adaptive-controller.md`.
 

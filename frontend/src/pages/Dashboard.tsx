@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bars, ChartCard, TrendLines } from "../components/Charts";
+import { CountUp } from "../components/Fx";
 import { useAuth } from "../context/AuthContext";
 import { useExercises } from "../hooks/useExercises";
 import { api } from "../services/api";
@@ -9,7 +10,27 @@ import type { AnalyticsSummary, Filters, ProgressPoint, WeeklySummary } from "..
 const ERR_LABEL: Record<string, string> = {
   insufficient_range: "Range short", incomplete_repetition: "Incomplete", too_fast: "Too fast", uncontrolled: "Uncontrolled",
 };
-const fmtDur = (s: number) => (s >= 3600 ? `${(s / 3600).toFixed(1)} h` : s >= 60 ? `${Math.round(s / 60)} min` : `${Math.round(s)} s`);
+const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/** The last seven calendar days (oldest first), each marked when at least one saved session started that day. */
+function lastSevenDays(points: ProgressPoint[]) {
+  const active = new Set(points.map((p) => dayKey(new Date(p.started_at))));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+    return { key: dayKey(d), label: d.toLocaleDateString(undefined, { weekday: "narrow" }), on: active.has(dayKey(d)) };
+  });
+}
+/** Simple fun milestones computed from the user's own saved totals. They say nothing about health. */
+function milestones(s: AnalyticsSummary | null, w: WeeklySummary | null) {
+  const sessions = s?.total_sessions ?? 0, reps = s?.completed_repetitions ?? 0, q = s?.average_quality_score ?? 0;
+  return [
+    { icon: "🌱", name: "First session", hint: "finish 1 session", on: sessions >= 1 },
+    { icon: "🔁", name: "100 reps", hint: "complete 100 repetitions", on: reps >= 100 },
+    { icon: "📅", name: "Regular", hint: "finish 5 sessions", on: sessions >= 5 },
+    { icon: "🔥", name: "3-day run", hint: "exercise 3 days in a row", on: (w?.day_streak ?? 0) >= 3 },
+    { icon: "🎯", name: "Smooth mover", hint: "average score 0.8+ over 3+ sessions", on: sessions >= 3 && q >= 0.8 },
+  ];
+}
+const fmtDur =(s: number) => (s >= 3600 ? `${(s / 3600).toFixed(1)} h` : s >= 60 ? `${Math.round(s / 60)} min` : `${Math.round(s)} s`);
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -37,6 +58,8 @@ export default function Dashboard() {
     n: i + 1, date: p.started_at, quality: p.quality, flagged: p.error_rate, level: p.level, suggested: p.next_level,
     rom: p.mean_rom_deg != null ? Math.round(p.mean_rom_deg) : null, counted: p.counted_reps ?? 0, target: p.target_reps ?? 0,
   })), [points]);
+  const week = useMemo(() => lastSevenDays(points ?? []), [points]);
+  const badges = useMemo(() => milestones(summary, weekly), [summary, weekly]);
   const errors = Object.entries(summary?.error_categories ?? {}).map(([k, v]) => ({ name: ERR_LABEL[k] ?? k, count: v }));
 
   if (authLoading) return <p className="muted">Loading...</p>;
@@ -90,8 +113,8 @@ export default function Dashboard() {
       {points && points.length > 0 && summary && (
         <>
           <div className="stats-grid">
-            <div className="card stat"><span className="muted">Sessions</span><strong>{summary.total_sessions}</strong></div>
-            <div className="card stat"><span className="muted">Repetitions completed</span><strong>{summary.completed_repetitions}</strong></div>
+            <div className="card stat"><span className="muted">Sessions</span><strong><CountUp value={summary.total_sessions} /></strong></div>
+            <div className="card stat"><span className="muted">Repetitions completed</span><strong><CountUp value={summary.completed_repetitions} /></strong></div>
             <div className="card stat"><span className="muted">Average score (0-1)</span><strong>{summary.average_quality_score != null ? summary.average_quality_score.toFixed(2) : "n/a"}</strong></div>
             <div className="card stat"><span className="muted">Time exercising</span><strong>{fmtDur(summary.total_duration_s)}</strong></div>
           </div>
@@ -101,6 +124,16 @@ export default function Dashboard() {
               {" "}{weekly.counted_repetitions_last_7_days} repetitions. Current run: {weekly.day_streak} day{weekly.day_streak === 1 ? "" : "s"} in a row. {weekly.note}
             </p>
           )}
+          <section className="card" aria-label="Your week">
+            <h2>Your week {weekly && weekly.day_streak > 0 && <span title="Days in a row"><span className="flame" aria-hidden="true">🔥</span> {weekly.day_streak}</span>}</h2>
+            <div className="week" role="list" aria-label="Days with a session, oldest first">
+              {week.map((d, i) => <span key={d.key} role="listitem" className={`day${d.on ? " on" : ""}`} style={{ "--d": `${i * 70}ms` } as React.CSSProperties} title={`${d.key}${d.on ? ": session" : ""}`}>{d.label}</span>)}
+            </div>
+            <h3>Milestones <span className="muted" style={{ fontWeight: 400, fontSize: ".85rem" }}>(for fun; not medical)</span></h3>
+            <div className="badges">
+              {badges.map((b) => <span key={b.name} className={`badge${b.on ? " on" : ""}`} title={b.hint}><span className="ic" aria-hidden="true">{b.icon}</span>{b.name}{!b.on && <span className="muted"> · {b.hint}</span>}</span>)}
+            </div>
+          </section>
           <div className="grid2">
             <ChartCard title="Score and flagged repetitions" description="Per session; higher score and lower flagged share are better.">
               <TrendLines data={data} domain={[0, 1]} lines={[{ key: "quality", name: "Average score", color: "var(--c1)" }, { key: "flagged", name: "Flagged share", color: "var(--c4)" }]} />

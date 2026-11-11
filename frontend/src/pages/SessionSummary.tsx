@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Bars, ChartCard } from "../components/Charts";
+import { Confetti } from "../components/Fx";
 import { api } from "../services/api";
 import type { SessionDetail } from "../types/api";
 
@@ -22,10 +23,13 @@ export default function SessionSummary() {
   if (!s) return <p className="muted">Loading session...</p>;
 
   const m = s.summary.metrics;
+  const celebrate = m != null && !s.is_demo && m.target_reps > 0 && m.counted_reps >= m.target_reps && (m.quality ?? 0) >= 0.8;
   const reps = s.repetitions.map((r) => ({ rep: `#${r.index}`, score: r.score ?? 0, range: r.range_of_motion_deg ?? 0 }));
   return (
     <>
-      <h1>Session summary</h1>
+      <Confetti fire={celebrate ? 1 : 0} />
+      <h1>Session summary{celebrate && " 🎉"}</h1>
+      {celebrate && <p className="ok">Target reached with a good score. Nice work!</p>}
       <p className="muted">
         {s.exercise_id.replace("_", " ")} · level {s.difficulty} · {new Date(s.started_at).toLocaleString()}
         {s.is_demo && " · SYNTHETIC DEMO (not a real person; never saved to a history)"}
