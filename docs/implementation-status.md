@@ -129,7 +129,7 @@
 - [x] **Printable session report** (print stylesheet, "Print or save as PDF"), pain and note shown on the summary.
 - [x] **Three more exercises** (hip abduction, hip flexion, seated knee extension; 9 in total) and a synthetic demo that can play any exercise; 10 backend tests. The synthetic training dataset is pinned to the original six exercises so earlier results stay reproducible. New exercise ranges are placeholders, checked only with synthetic movements.
 - [x] **General API rate limiting** (300/min per address).
-- [x] Tests now: 203 backend + 67 frontend + 15 Unity edit-mode (285); the frontend builds.
+- [x] Tests now: 203 backend + 72 frontend + 15 Unity edit-mode (290); the frontend builds.
 
 ## Phase 9b - Performance measurement and thesis draft
 - [x] `python -m app.ml.cli perf`: backend analysis cost (about 4 microseconds per angle sample) and WebSocket round trip (mean 0.76 ms, p99 1.5 ms) measured and written to `docs/results/performance.json`, shown on the Research page. In-process test client on one computer: excludes the network and the browser's pose estimation, which need a camera and were **not measured**. 1 backend test, 1 frontend test.
