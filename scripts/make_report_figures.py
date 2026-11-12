@@ -55,10 +55,11 @@ def results() -> None:
     colors = ["#9aa8b3", BLUE, NAVY, "#4a9d7a"]
     fig, ax = plt.subplots(figsize=(8, 4.2))
     bars = ax.bar(labels, vals, color=colors, width=0.6)
-    ax.axhline(0.5, color="#b42318", ls="--", lw=1.2); ax.text(3.45, 0.505, "chance = 0.50", color="#b42318", fontsize=8, ha="right")
+    ax.axhline(0.5, color="#b42318", ls="--", lw=1.2); ax.text(-0.45, 0.455, "chance = 0.50", color="#b42318", fontsize=8, ha="left")
     ax.errorbar([2], [0.686], yerr=[[0.686 - 0.625], [0.761 - 0.686]], fmt="none", ecolor="black", capsize=5, lw=1.3)
     for b, v in zip(bars, vals):
-        ax.text(b.get_x() + b.get_width() / 2, v + 0.012, f"{v:.3g}", ha="center", fontsize=9, weight="bold")
+        top = 0.761 if v == 0.686 else v
+        ax.text(b.get_x() + b.get_width() / 2, top + 0.012, f"{v:.3g}", ha="center", fontsize=9, weight="bold")
     ax.set_ylim(0.4, 0.82); ax.set_ylabel("Balanced accuracy"); ax.spines[["top", "right"]].set_visible(False)
     ax.set_title("Movement-quality classification: train on REHAB26, test on REHAB24-6", fontsize=10, color=NAVY)
     fig.text(0.5, -0.02, "Bar with whisker: 95% confidence interval over participants (0.625 to 0.761). Source: docs/results/external-mocap.json", ha="center", fontsize=7.5, color="#55656f")

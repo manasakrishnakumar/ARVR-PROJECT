@@ -41,3 +41,5 @@ Real research datasets (REHAB26, REHAB24-6; CC BY-NC 4.0) are not included: see 
 AR camera-overlay upgrades (ghost trainer, joint colours, setup hints, voice cues, front/back camera, full screen), pain check-in that makes suggestions more cautious, large-text and high-contrast display, backup/restore and weekly summary, printable session report, nine exercises, experimental web "Enter VR" (untested without a headset), general API rate limiting, Docker (verified) and local HTTPS for phone use (`docs/installation.md`). Results for the thesis: `docs/results/SUMMARY.md`. Honest status of everything: `docs/implementation-status.md`. About 290 automated tests (203 backend, 72 frontend, 15 Unity).
 
 What is left (needs you, other people or hardware): `docs/remaining-work.md`.
+
+Full project report (Word, with real screenshots of every page): `docs/ARVR_Project_Report.docx`; rebuild with `python scripts/make_report_figures.py` and `python scripts/build_report.py` (needs python-docx, matplotlib and the style-template .docx path in the script header).
