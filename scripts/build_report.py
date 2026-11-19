@@ -358,12 +358,12 @@ bullets([
 ])
 note("**Verification status.** Earlier in the project the Unity client compiled with no errors, 15 edit-mode tests passed, a Windows player was built and ran, and the synthetic demo was "
      "run by hand in Play mode against the live backend (repetitions counted, feedback and suggestion shown). The newer HUD (big counter, phase pill, progress bar), the joint highlight, the torso "
-     "block and the floor grid were added afterwards. On 19 November 2026 the project compiled and all 22 edit-mode tests passed in batch mode (15 earlier plus 7 for the HUD helpers). How the new HUD looks in Play mode has not yet been checked by eye.")
+     "block and the floor grid were added afterwards. On 19 November 2026 the project compiled and all 22 edit-mode tests passed in batch mode (15 earlier plus 7 for the HUD helpers). The same day the room was run in Play mode through an editor script (Arvr.Editor.CaptureRoom) against the live backend, and the figure below is that Game-view capture: trainer demo, repetition counter, phase label, progress bar, torso and highlighted joint.")
 figure_missing = not (SHOTS / "unity-room.png").exists()
 if figure_missing:
     note("**Figure to add:** a Game-view screenshot of the Unity room in Play mode (trainer in amber, user in teal, HUD on the left). Capture it after the first Play run and insert it here.")
 else:
-    figure(SHOTS / "unity-room.png", "Unity rehabilitation room in Play mode: trainer (amber), user (teal) and HUD")
+    figure(SHOTS / "unity-room.png", "Unity rehabilitation room in Play mode (real capture): trainer (amber), user (teal) and HUD, trainer demo running")
 
 h1("Pose Estimation and Angle Measurement", key="pose")
 h2("Browser Pose Estimation")
@@ -675,7 +675,7 @@ table(["Check", "Result"], [
     ["Frontend tests", f"{n_front} passed"],
     ["TypeScript check", "clean" if tsc_ok else "not verified"],
     ["Frontend production build", "OK" if build_ok else "not verified"],
-    ["Unity compile and tests", "Compiled and 22/22 edit-mode tests passed (batch mode, 19 Nov 2026); Play-mode look not yet checked"],
+    ["Unity compile and tests", "Compiled; 22/22 edit-mode tests passed (batch mode); Play mode run and captured (19 Nov 2026)"],
     ["Pages opened and checked in a browser", "Home, Exercises, Live session, Pose analysis, AR overlay, 3D room, Research, Record data, Settings, Dashboard"],
     ["Interactive features checked in a browser", "Home demo counted a repetition; Ctrl+K palette navigated to the Dashboard"],
 ], [2.6, 3.7])

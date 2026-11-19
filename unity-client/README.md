@@ -40,6 +40,6 @@ $u = "C:\Program Files\Unity\Hub\Editor\6000.6.7f1\Editor\Unity.exe"; $p = "<pat
 Edit-mode tests (`Assets/Tests/EditMode`) cover the pose maths, trainer poses for four joint types on both sides, message and URL parsing, and the relay frame format.
 
 ## Verification status
-**Verified on 19 November 2026:** the project compiles and all 22 edit-mode tests pass in batch mode (15 earlier + 7 HudMath). The newer HUD visuals (counter, phase pill, progress bar, joint highlight, torso, floor grid) have not yet been looked at in Play mode.
+**Verified on 19 November 2026:** the project compiles and all 22 edit-mode tests pass in batch mode (15 earlier + 7 HudMath). The room was also run in Play mode against the live backend and captured (`docs/screenshots/unity-room.png`: counter, phase label, progress bar, joint highlight, torso, floor grid). Reproduce with `Unity -projectPath unity-client -executeMethod Arvr.Editor.CaptureRoom.Run` (not batch mode). Project setting changed: Active Input Handling = Both (the Input System package from OpenXR otherwise opens a blocking dialog in the Editor).
 
 See `docs/implementation-status.md` (Unity section) for what was verified and when; anything not listed there is untested.
