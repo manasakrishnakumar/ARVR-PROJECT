@@ -2,6 +2,9 @@
 
 Research prototype. **Not a medical device; not clinically validated.** Follow guidance from your qualified rehabilitation professional. Runs locally; no video is uploaded or stored by default.
 
+
+**Main application: the Unity 6 3D rehabilitation room (`unity-client/`).** The web app is its companion (camera and pose estimation in the browser, accounts, dashboard, research pages) and also works on its own. Both use the same backend. Blender is not used; 3D objects are created in Unity code.
+
 ## Backend quick start (Windows PowerShell)
 ```powershell
 cd backend

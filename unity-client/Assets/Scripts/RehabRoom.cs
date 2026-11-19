@@ -37,6 +37,8 @@ namespace Arvr
         int reps, target;
         LandmarkFigure trainer, user;
         Vector2 scroll;
+        GUIStyle bigStyle, titleStyle, pillStyle;
+        Texture2D white;
 
         ExerciseApi.Exercise Current => exercises.Length > 0 ? exercises[Mathf.Clamp(exerciseIndex, 0, exercises.Length - 1)] : null;
 
@@ -70,6 +72,26 @@ namespace Arvr
             light.transform.rotation = Quaternion.Euler(50, -30, 0);
             Camera.main.transform.position = new Vector3(0, 1.3f, -3.6f);
             Camera.main.transform.LookAt(new Vector3(0, 1.0f, 0));
+            Camera.main.clearFlags = CameraClearFlags.SolidColor;
+            Camera.main.backgroundColor = new Color(0.05f, 0.08f, 0.11f);
+            // floor grid and a teal rim light so the figures stand out
+            var gridColor = new Color(0.20f, 0.34f, 0.38f);
+            for (int i = -6; i <= 6; i++)
+            {
+                GridLine(new Vector3(i * 0.5f, 0.005f, 0), new Vector3(0.012f, 0.004f, 5.0f), gridColor);
+                GridLine(new Vector3(0, 0.005f, i * 0.4f), new Vector3(6.0f, 0.004f, 0.012f), gridColor);
+            }
+            var rim = new GameObject("Rim light").AddComponent<Light>();
+            rim.type = LightType.Point; rim.color = new Color(0.18f, 0.83f, 0.75f); rim.intensity = 1.2f; rim.range = 7f;
+            rim.transform.position = new Vector3(0, 2.4f, 1.8f);
+        }
+
+        static void GridLine(Vector3 pos, Vector3 scale, Color color)
+        {
+            var g = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Destroy(g.GetComponent<Collider>());
+            g.transform.position = pos; g.transform.localScale = scale;
+            g.GetComponent<Renderer>().material.color = color;
         }
 
         string Side => "LEFT";
@@ -115,6 +137,10 @@ namespace Arvr
             if (ex == null) return;
             // the trainer always shows the exercise's illustrative movement
             trainer.Apply(PoseMath.Trainer(ex.landmarks, ex.start_angle_deg, ex.target_angle_deg, Side, PoseMath.Progress01(Time.time)), -1.1f);
+            // the exercising joint is the middle landmark of the exercise's three; it is coloured by the counter phase
+            int joint = ex.landmarks != null && ex.landmarks.Length >= 2 && PoseMath.Index.TryGetValue(ex.landmarks[1], out var li) ? li : -1;
+            trainer.Highlight(joint, HudMath.Moving);
+            user.Highlight(joint, HudMath.PhaseColor(phase));
             if (!running) { user.SetVisible(false); return; }
 
             if (source == Source.LiveFromBrowser)
@@ -147,8 +173,10 @@ namespace Arvr
 
         void OnGUI()
         {
+            EnsureStyles();
             GUILayout.BeginArea(new Rect(12, 12, 470, Screen.height - 24), GUI.skin.box);
-            GUILayout.Label("ARVR 3D room (research prototype, not a medical device)");
+            GUILayout.Label("ARVR Rehabilitation Room", titleStyle);
+            GUILayout.Label("Research prototype, not a medical device");
             var ex = Current;
             if (!running)
             {
@@ -176,7 +204,17 @@ namespace Arvr
                 if (GUILayout.Button("Stop and save")) StartCoroutine(StopSession());
             }
             GUILayout.Label($"{ex?.name}  ·  level {level}  ·  {backendUrl}  ·  {XrStatus.Describe()}");
-            GUILayout.Label($"Repetitions: {reps} / {(target > 0 ? target.ToString() : "-")}   Phase: {phase}   Angle: {(float.IsNaN(angle) ? "n/a" : angle.ToString("F0") + "°")}");
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"{reps} / {(target > 0 ? target.ToString() : "-")}", bigStyle, GUILayout.Width(150));
+            var prev = GUI.color; GUI.color = HudMath.PhaseColor(phase);
+            GUILayout.Label(HudMath.PhaseLabel(phase), pillStyle, GUILayout.Width(130));
+            GUI.color = prev;
+            GUILayout.Label($"Angle: {(float.IsNaN(angle) ? "n/a" : angle.ToString("F0") + "°")}");
+            GUILayout.EndHorizontal();
+            var bar = GUILayoutUtility.GetRect(1, 12, GUILayout.ExpandWidth(true));
+            GUI.color = new Color(1, 1, 1, 0.18f); GUI.DrawTexture(bar, white);
+            GUI.color = HudMath.Target; GUI.DrawTexture(new Rect(bar.x, bar.y, bar.width * HudMath.ProgressFraction(reps, target), bar.height), white);
+            GUI.color = prev;
             if (!string.IsNullOrEmpty(calibratedText)) GUILayout.Label(calibratedText);
             GUILayout.Label(feedback);
             GUILayout.Label(status);
@@ -188,6 +226,15 @@ namespace Arvr
                 GUILayout.Label(r.safety_note);
             }
             GUILayout.EndArea();
+        }
+
+        void EnsureStyles()
+        {
+            if (bigStyle != null) return;
+            white = Texture2D.whiteTexture;
+            bigStyle = new GUIStyle(GUI.skin.label) { fontSize = 40, fontStyle = FontStyle.Bold };
+            titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold };
+            pillStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         }
 
         void OnDestroy() { client?.Dispose(); relay?.Dispose(); }

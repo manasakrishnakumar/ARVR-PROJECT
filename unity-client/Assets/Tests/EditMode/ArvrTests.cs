@@ -136,4 +136,35 @@ namespace Arvr.Tests
             Assert.AreEqual(0, ExerciseApi.Parse("not json").Length);
         }
     }
+
+    public class HudMathTests
+    {
+        [TestCase(0, 5, 0f)]
+        [TestCase(2, 5, 0.4f)]
+        [TestCase(5, 5, 1f)]
+        [TestCase(9, 5, 1f)]   // never past full
+        [TestCase(3, 0, 0f)]   // no target known yet
+        public void ProgressFraction_IsClampedAndSafeWithoutATarget(int reps, int target, float expected)
+        {
+            Assert.AreEqual(expected, HudMath.ProgressFraction(reps, target), 0.001f);
+        }
+
+        [Test]
+        public void PhaseColor_IsGreenOnlyAtTheTarget()
+        {
+            Assert.AreEqual(HudMath.Target, HudMath.PhaseColor("target"));
+            Assert.AreEqual(HudMath.Moving, HudMath.PhaseColor("moving_out"));
+            Assert.AreEqual(HudMath.Moving, HudMath.PhaseColor("returning"));
+            Assert.AreEqual(HudMath.Rest, HudMath.PhaseColor("rest"));
+            Assert.AreEqual(HudMath.Rest, HudMath.PhaseColor(null));
+        }
+
+        [Test]
+        public void PhaseLabel_IsReadableAndNeverEmpty()
+        {
+            Assert.AreEqual("Moving out", HudMath.PhaseLabel("moving_out"));
+            Assert.AreEqual("Waiting", HudMath.PhaseLabel(""));
+            Assert.AreEqual("Waiting", HudMath.PhaseLabel(null));
+        }
+    }
 }

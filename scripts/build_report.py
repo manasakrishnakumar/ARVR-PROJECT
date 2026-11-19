@@ -81,12 +81,19 @@ def page_break():
     doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
 
 
-def h1(text, first=False):
+SECTION_ORDER = ["exec", "arch", "unity", "pose", "assess", "adapt", "ex", "web", "api", "eval", "use", "privacy", "test", "refs", "limits", "gloss", "verify"]
+SEC = {k: i + 1 for i, k in enumerate(SECTION_ORDER)}  # section numbers, used in cross references
+sub = {"n": 0}
+
+
+def h1(text, key, first=False):
     if not first:
         page_break()
+    assert fig_no["sec"] + 1 == SEC[key], f"section {key} out of order"
+    fig_no["sec"] = SEC[key]
+    sub["n"] = 0
     p = doc.add_paragraph(style="Heading 1")
-    _rpr(p.add_run(text), color=NAVY, size=16)
-    fig_no["sec"] = int(text.split(".")[0]) if text.split(".")[0].isdigit() else fig_no["sec"]
+    _rpr(p.add_run(f"{SEC[key]}. {text}"), color=NAVY, size=16)
     fig_no["n"] = 0
     rule = doc.add_paragraph()
     pb = OxmlElement("w:pBdr")
@@ -98,8 +105,9 @@ def h1(text, first=False):
 
 
 def h2(text):
+    sub["n"] += 1
     p = doc.add_paragraph(style="Heading 2")
-    _rpr(p.add_run(text), color=NAVY)
+    _rpr(p.add_run(f"{fig_no['sec']}.{sub['n']} {text}"), color=NAVY)
 
 
 def bullets(items):
@@ -209,7 +217,7 @@ cover = [
     ("Programme", "M.Tech project"),
     ("Author", "Manasa Krishnakumar"),
     ("Version", "Research prototype 0.1.0 (not a medical device)"),
-    ("Technology Stack", "Python 3.10 | FastAPI | SQLite | React 19 + TypeScript | MediaPipe | three.js | Unity 6 (optional)"),
+    ("Technology Stack", "Unity 6 + C# (primary 3D/VR client) | Python 3.10 | FastAPI | SQLite | React 19 + TypeScript | MediaPipe | three.js"),
     ("Evidence", "REHAB26-ViewAngles and REHAB24-6 public datasets (no patients)"),
     ("Source Code", "github.com/manasakrishnakumar/ARVR-PROJECT"),
     ("Report Date", TODAY_LONG),
@@ -225,19 +233,21 @@ for i, (k, v) in enumerate(cover):
     _rpr(b.paragraphs[0].add_run(v), size=10)
 
 # ---------- 1 ----------
-h1("1. Executive Summary", first=False)
+h1("Executive Summary", key="exec")
 para("The ARVR framework is a local, camera-only system for guided home rehabilitation exercise. It estimates body pose in the "
      "browser from an ordinary webcam, measures joint angles, counts repetitions, assesses movement quality, gives short feedback, "
-     "and suggests a gently adjusted difficulty level for the next session. The same pipeline drives four presentations: a 2D "
-     "live-session page, a camera-overlay AR view, a desktop 3D room and an optional Unity client.")
+     "and suggests a gently adjusted difficulty level for the next session. The main application is a Unity 3D rehabilitation room (virtual trainer, "
+     "mirrored user figure and a live HUD); a web companion provides the camera and pose estimation, accounts, the dashboard and the research pages, "
+     "plus a 2D live-session page, a camera-overlay AR view and a desktop 3D room. All of them share one backend pipeline.")
 para("The adaptive controller is deliberately conservative and is tested for safety properties (it never raises difficulty on "
      "unreliable data, moves one level at a time, and reported pain only makes suggestions more cautious). Every stage of the "
      "pipeline was evaluated on public research recordings using participant-level splits and an external dataset.")
 note("**Honest status.** This is a research prototype. No patients took part, thresholds have not been reviewed by a clinician, "
      "and nothing here shows that the system improves recovery. Real webcam use on a laptop or phone, the Unity Play-mode check "
-     "and immersive VR on a headset have not yet been tested (Section 14).")
+     "and immersive VR on a headset have not yet been tested (Section " + str(SEC["limits"]) + ").")
 h2("Key Features at a Glance")
 bullets([
+    "Unity 6 3D rehabilitation room (primary application): virtual trainer, mirrored user figure, live HUD, adaptive suggestion",
     "Browser pose estimation (MediaPipe Pose Landmarker, CPU); video never leaves the browser",
     "Confidence-gated 2D joint angles with an isotropic correction for non-square video",
     "Repetition counter (state machine with hysteresis) and optional per-user range calibration",
@@ -260,9 +270,9 @@ table(["Question", "Result"], [
 ], [2.4, 3.9])
 
 # ---------- 2 ----------
-h1("2. Project Architecture")
-h2("2.1 Directory Structure")
-para("The project is a monorepo with a Python backend, a React frontend, an optional Unity client, documentation and scripts:")
+h1("Project Architecture", key="arch")
+h2("Directory Structure")
+para("The project is a monorepo with a Python backend, the main Unity client, a React web companion, documentation and scripts:")
 table(["Path / File", "Description"], [
     ["ARVR project/", "Repository root"],
     ["  backend/app/", "FastAPI application (about 4,300 lines in 58 Python files)"],
@@ -278,13 +288,14 @@ table(["Path / File", "Description"], [
     ["  frontend/src/", "React + TypeScript app (about 4,200 lines in 56 files)"],
     ["    pose/", "Pose estimators (MediaPipe, synthetic demo), skeleton drawing, guidance, speech, WebXR helper"],
     ["    pages/, components/", "Pages, charts, command palette, movement demo, effects"],
-    ["  unity-client/", "Optional Unity 6 client with OpenXR packages and a local pose relay"],
+    ["  unity-client/", "Primary application: Unity 6 3D room (C#, about 900 lines), OpenXR packages, edit-mode tests"],
     ["  docs/", "User guide, installation, API, architecture, results, thesis draft, this report"],
     ["  scripts/", "Dev certificate script, figure and report builders"],
     ["  docker-compose*.yml", "Docker run (nginx proxy) and optional HTTPS override"],
 ], [2.5, 3.8], mono_first=True)
-h2("2.2 Technology Stack")
+h2("Technology Stack")
 table(["Layer", "Technology", "Purpose"], [
+    ["Main application", "Unity 6 (6000.6.7f1), C#, OpenXR packages", "3D rehabilitation room, trainer and user figures, HUD; optional VR"],
     ["Backend framework", "FastAPI (Python 3.10)", "REST API and WebSockets"],
     ["Persistence", "SQLAlchemy 2 + SQLite", "Users, sessions, repetitions, decisions; in-place column upgrades"],
     ["Machine learning", "scikit-learn", "Random Forest quality baseline, evaluation"],
@@ -294,7 +305,7 @@ table(["Layer", "Technology", "Purpose"], [
     ["Testing", "pytest, vitest, Testing Library, Unity edit-mode", "About 290 automated tests"],
     ["Packaging", "Docker Compose, nginx", "One-command run; optional HTTPS on 8443"],
 ], [1.7, 2.4, 2.2])
-h2("2.3 Live Data Flow")
+h2("Live Data Flow")
 figure(SHOTS / "fig-architecture.png", "System architecture: pose in the browser, analysis and adaptation in the backend", 6.1)
 bullets([
     "Browser: camera frame → MediaPipe → landmarks → exercise angle → a small message {time, angle} about every 66 ms.",
@@ -304,18 +315,69 @@ bullets([
 ])
 
 # ---------- 3 ----------
-h1("3. Pose Estimation and Angle Measurement")
-h2("3.1 Browser Pose Estimation")
+h1("Unity 3D Client: the Primary Application", key="unity")
+h2("Role in the System")
+para("The Unity client is the main application of the project: the 3D rehabilitation room where the user trains. It shows a virtual trainer that loops the "
+     "exercise movement, a second figure that mirrors the user, and a heads-up display with the repetition counter, phase, progress bar, feedback and the adaptive "
+     "suggestion after each session. It was built with Unity 6 (Editor 6000.6.7f1) and C#, and it uses the same backend and exercise data as the web application, "
+     "so counting, quality assessment, calibration and the adaptive suggestion are identical everywhere.")
+para("The web application plays a supporting role: it captures the camera, runs pose estimation (MediaPipe, in the browser) and provides accounts, the dashboard "
+     "and the research pages. Its **3D room** page can publish the live pose, as numbers only, to a room code on the local backend, and the Unity client joins that room and mirrors the user.")
+note("**Honest limits.** Pose estimation does not run inside Unity: real pose reaches Unity through the browser relay (running MediaPipe inside Unity would need an extra plugin). "
+     "Blender was not used; every 3D object is created in Unity from primitives in code. VR is prepared (OpenXR packages installed) but has not been tried on a headset.")
+h2("Features")
+bullets([
+    "All exercises are loaded from the backend (GET /api/exercises); a built-in elbow-flexion fallback keeps the room usable when the backend is down.",
+    "Three angle sources: a synthetic trainer demo (always sent as a demo session, never saved to a history), a manual slider, and live pose from the browser through the relay.",
+    "Optional calibration to the user's own range; the backend counts relative to it and no repetitions are lost.",
+    "HUD: large repetition counter, phase pill (rest / moving out / at target / returning), progress bar, joint angle, per-repetition feedback, status line and XR status.",
+    "The exercising joint is enlarged and coloured by the counter phase: grey at rest, amber while moving, green at the target.",
+    "Figures are built from landmarks (spheres, cylinders, a torso block and a head); the room has a floor grid, a wall and lights.",
+    "After Stop and save, the adaptive suggestion is shown with its reasons and the safety note.",
+])
+h2("Code Structure")
+table(["File (unity-client/Assets)", "Role"], [
+    ["Scripts/RehabRoom.cs", "Scene controller: builds the room, runs sessions, draws the HUD (about 200 lines)"],
+    ["Scripts/LandmarkFigure.cs", "Poses the trainer and user figures from landmarks; joint highlight"],
+    ["Scripts/PoseMath.cs", "Angle maths, trainer poses for the exercise joints, relay frame decoding"],
+    ["Scripts/HudMath.cs", "Pure HUD helpers: progress fraction, phase colour and label"],
+    ["Scripts/AnalysisClient.cs", "WebSocket client for /api/ws/analysis (sends angle and time, receives state and repetition messages)"],
+    ["Scripts/RelayClient.cs", "WebSocket client for /api/ws/relay/{room} (live pose from the browser)"],
+    ["Scripts/ExerciseApi.cs, SessionApi.cs", "REST calls: exercise list, create and complete a session"],
+    ["Scripts/XrStatus.cs", "Reports whether an XR device is active"],
+    ["Editor/CreateRoomScene.cs, BuildScript.cs", "Menu items (also batch mode) that create the scene and build the Windows player"],
+    ["Tests/EditMode/ArvrTests.cs", "NUnit edit-mode tests for the maths, parsing and HUD helpers"],
+], [2.6, 3.7], mono_first=True)
+h2("Running and Testing")
+for line in ('"C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.7f1\\Editor\\Unity.exe" -projectPath "<path>\\unity-client"',):
+    para(line, size=9, after=2).runs[0].font.name = "Courier New"
+bullets([
+    "Open unity-client in Unity 6000.6.7f1, open Assets/Scenes/RehabRoom.unity (or ARVR > Create room scene), start the backend and press Play.",
+    "Pick an exercise and a source, then click Start. For live pose: in the web app open 3D room, tick Share live pose, start the camera, and type the room code in Unity.",
+    "Batch mode: -runTests -testPlatform EditMode for the tests, and -executeMethod Arvr.EditorTools.BuildScript.BuildWindows for a Windows player (commands in unity-client/README.md).",
+])
+note("**Verification status.** Earlier in the project the Unity client compiled with no errors, 15 edit-mode tests passed, a Windows player was built and ran, and the synthetic demo was "
+     "run by hand in Play mode against the live backend (repetitions counted, feedback and suggestion shown). The newer HUD (big counter, phase pill, progress bar), the joint highlight, the torso "
+     "block, the floor grid and their 7 added test cases were written and reviewed but not compiled or run, because the Unity Editor licence on this computer was not active when this report was built; "
+     "open the project once in Unity Hub (signed in) to compile and run them.")
+figure_missing = not (SHOTS / "unity-room.png").exists()
+if figure_missing:
+    note("**Figure to add:** a Game-view screenshot of the Unity room in Play mode (trainer in amber, user in teal, HUD on the left). Capture it after the first Play run and insert it here.")
+else:
+    figure(SHOTS / "unity-room.png", "Unity rehabilitation room in Play mode: trainer (amber), user (teal) and HUD")
+
+h1("Pose Estimation and Angle Measurement", key="pose")
+h2("Browser Pose Estimation")
 para("MediaPipe Pose Landmarker (lite model) runs inside the page on the CPU. The pose code sits behind a small PoseEstimator "
      "interface so the model can be replaced; a synthetic demo figure implements the same interface, which allows every page to be "
      "tested without a camera. A landmark with visibility below 0.5, a non-finite value or a zero-length segment gives no angle (null), never a guess.")
-h2("3.2 Joint Angle")
+h2("Joint Angle")
 para("The angle at a joint is the 2D angle between three landmarks. Image coordinates are normalised separately per axis, so x is "
      "multiplied by width/height before any angle is computed (an isotropic correction); skipping it distorts angles on non-square video. "
      "Angles are 2D image-plane estimates, not 3D anatomical angles and not clinical measurements.")
-h2("3.3 Smoothing")
+h2("Smoothing")
 para("Exponential smoothing skips gaps and rejects one-off spikes but accepts a persistent jump, so a real fast movement is not hidden.")
-h2("3.4 Repetition Counting and Calibration")
+h2("Repetition Counting and Calibration")
 para("Progress is normalised between a start angle (0) and a target angle (1), so increasing and decreasing movements are handled alike. "
      "The counter moves through rest, moving out, target and returning, with hysteresis, a minimum repetition duration and an abort on long gaps.")
 para("With calibration enabled, the start and target come from the user's own first seconds (10th and 90th percentile after at least 5 s, "
@@ -324,21 +386,21 @@ para("With calibration enabled, the start and target come from the user's own fi
 figure(SHOTS / "pose-analysis.jpg", "Pose analysis page: skeleton, diagnostics (frame rate, person-found rate) and joint-angle chart; synthetic demo figure")
 
 # ---------- 4 ----------
-h1("4. Movement Assessment")
-h2("4.1 Rule-Based Labels")
+h1("Movement Assessment", key="assess")
+h2("Rule-Based Labels")
 para("A transparent rule set labels each repetition acceptable, insufficient range, incomplete, too fast, uncontrolled or insufficient data. "
      "Insufficient data is used whenever the measurement was unreliable; the system never guesses.")
-h2("4.2 Features")
+h2("Features")
 para("Per repetition the system computes range, duration, speed, direction reversals and reliability. Posture features (torso tilt, shoulder "
      "elevation asymmetry, head tilt, elbow bend, left-right asymmetry, knee valgus, heel lift, knee over toe) and MediaPipe depth cues bring the total to 14.")
-h2("4.3 Machine-Learning Baseline")
+h2("Machine-Learning Baseline")
 para("A Random Forest is trained on repetition features as a compared baseline. It is preliminary: on independent recordings it is only modestly "
-     "better than chance, so the application relies on the transparent rules and the Research page reports the model honestly (Section 9).")
+     "better than chance, so the application relies on the transparent rules and the Research page reports the model honestly (Section " + str(SEC["eval"]) + ").")
 figure(SHOTS / "live-session.jpg", "Live session page: repetition counter, phase, calibrated range and per-repetition feedback (synthetic demo)")
 
 # ---------- 5 ----------
-h1("5. Adaptive Difficulty Controller")
-h2("5.1 Design Principles")
+h1("Adaptive Difficulty Controller", key="adapt")
+h2("Design Principles")
 bullets([
     "Unreliable data never raises difficulty.",
     "Changes are one level at a time, between sessions, within levels 1 to 3.",
@@ -346,7 +408,7 @@ bullets([
     "A very poor session suggests a pause; reported pain only makes the suggestion more cautious.",
     "Every suggestion lists its reasons, and the user can reset.",
 ])
-h2("5.2 Thresholds (backend/app/personalization/config.json)")
+h2("Thresholds (backend/app/personalization/config.json)")
 table(["Rule", "Setting"], [
     ["Minimum reliable repetitions / fraction", "5 repetitions and at least 80% reliable"],
     ["Minimum sessions at a level", "2"],
@@ -356,7 +418,7 @@ table(["Rule", "Setting"], [
     ["Pain check-in", "pain ≥ 4/10: no increase; pain ≥ 7/10: pause"],
 ], [2.6, 3.7])
 note("These values are illustrative and have not been reviewed by a clinician. A rehabilitation professional must review them before any real use.")
-h2("5.3 Simulation Result")
+h2("Simulation Result")
 para("The controller was run against made-up user models (200 simulated users per model, 40 sessions each). This checks behaviour only; it does not show that adaptive difficulty helps real people.")
 table(["User model", "Policy", "Mismatch (lower is better)", "Level changes", "Reversals"], [
     ["stable", "best fixed level (level 1)", "0.475", "0.0", "0.0"],
@@ -367,7 +429,7 @@ table(["User model", "Policy", "Mismatch (lower is better)", "Level changes", "R
 figure(SHOTS / "research.jpg", "Research page: the simulation table is clearly labelled SIMULATION")
 
 # ---------- 6 ----------
-h1("6. Exercise Library")
+h1("Exercise Library", key="ex")
 para("Nine exercises are defined as JSON files; start and target angles are illustrative placeholders, not prescriptions. All use three levels "
      "(5, 8 and 10 repetitions; 60%, 75% and 90% of the range; minimum repetition time 1.5, 1.2 and 1.0 s).")
 ex_rows = []
@@ -378,8 +440,10 @@ table(["Exercise", "Joint", "Start → target", "Things the system can notice"],
 figure(SHOTS / "exercises.jpg", "Exercise library page with diagrams and illustrative level tables")
 
 # ---------- 7 ----------
-h1("7. Web Application")
-h2("7.1 Pages")
+h1("Web Companion Application", key="web")
+para("The web application is the companion to the Unity client. It owns the camera and the pose estimation, and it offers the same training pipeline as a 2D page, an AR camera overlay "
+     "and a desktop 3D room for users who have no Unity build. It also holds the accounts, the dashboard and the research pages.")
+h2("Pages")
 table(["Page", "Route", "What it does"], [
     ["Home", "/", "Introduction, an interactive 'raise your arms' demo, links to every mode"],
     ["Exercises", "/exercises", "Exercise library with diagrams, errors it can notice and level tables"],
@@ -394,17 +458,17 @@ table(["Page", "Route", "What it does"], [
     ["Settings & privacy", "/settings", "Privacy facts, export, backup and restore, delete account"],
 ], [1.4, 1.3, 3.6])
 figure(SHOTS / "home.jpg", "Home page with the interactive movement demo")
-h2("7.2 AR Overlay")
+h2("AR Overlay")
 para("The camera-overlay AR page is the primary experience when no headset is available. It draws a translucent ghost trainer fitted to the user's torso, "
      "colours the exercising joint green, amber or red, shows setup hints (step back, step closer, face the camera), a progress bar and a "
      "'Good / Slower / Go further' flash after each repetition. It offers optional voice cues, front or back camera and full screen. "
      "It is a camera overlay, not immersive headset AR: WebXR cannot expose camera frames to a page, so body tracking in a headset is not possible from the web.")
 figure(SHOTS / "ar-overlay.jpg", "AR overlay: ghost trainer, target angle and 'Good' flash (synthetic demo)")
-h2("7.3 3D Room and VR")
+h2("3D Room and VR")
 para("The 3D room shows an amber virtual trainer and a teal figure that mirrors the user. An 'Enter VR' button appears only when the browser reports a WebXR headset; "
      "it has never been tried on a headset and is documented as untested.")
 figure(SHOTS / "room-3d.jpg", "3D rehabilitation room: trainer (amber) and mirrored user (teal)")
-h2("7.4 Interactive Touches")
+h2("Interactive Touches")
 bullets([
     "Home page demo: drag the arms or use the slider; a repetition counts after reaching 90° and returning below 20°. It is a toy with no camera.",
     "Ctrl + K (or /) opens a page switcher; a theme button cycles automatic, light and dark.",
@@ -416,8 +480,8 @@ figure(SHOTS / "dashboard-guest.jpg", "Dashboard for a guest: sign-in prompt (sa
 figure(SHOTS / "record-data.jpg", "Record data page: consent first, then numbers only, with participant codes")
 
 # ---------- 8 ----------
-h1("8. Backend API and Database")
-h2("8.1 Endpoints (prefix /api)")
+h1("Backend API and Database", key="api")
+h2("Endpoints (prefix /api)")
 table(["Method", "Path", "Purpose"], [
     ["GET", "/health", "Status and the safety disclaimer"],
     ["GET", "/exercises, /exercises/{id}", "Exercise library"],
@@ -436,7 +500,7 @@ table(["Method", "Path", "Purpose"], [
     ["WS", "/ws/analysis", "Live angle stream → counter and assessment"],
     ["WS", "/ws/relay/{room}", "Local pose relay for the Unity client"],
 ], [1.3, 2.7, 2.3], mono_first=False)
-h2("8.2 Database Tables")
+h2("Database Tables")
 table(["Table", "Main columns"], [
     ["users", "id, username (unique), password_hash (scrypt), age_range, goals, preferences, created_at"],
     ["auth_tokens", "token_digest (SHA-256 only), user_id, created_at, expires_at"],
@@ -444,7 +508,7 @@ table(["Table", "Main columns"], [
     ["repetitions", "id, session_id, index, range_of_motion_deg, duration_s, quality_label, quality_score, counted, reliable, features"],
     ["adaptive_decisions", "id, user_id, exercise_id, session_id, from_level, to_level, action, classification, reasons, metrics, created_at"],
 ], [1.6, 4.7], mono_first=True)
-h2("8.3 Security Measures")
+h2("Security Measures")
 bullets([
     "Passwords hashed with scrypt; only a SHA-256 digest of each bearer token is stored.",
     "Sign-in lockout after 5 failures in 5 minutes per username and IP; general rate limit of 300 requests per minute per IP.",
@@ -453,12 +517,12 @@ bullets([
 ])
 
 # ---------- 9 ----------
-h1("9. Evaluation and Results")
-h2("9.1 Datasets")
+h1("Evaluation and Results", key="eval")
+h2("Datasets")
 para("Two public datasets were used (CC BY-NC 4.0; raw data is not redistributed). **REHAB26-ViewAngles** (Zenodo 23018128): 5 healthy volunteers, "
      "3 exercises, 1,665 labelled repetitions; participants are pseudonymised R26-P1 to R26-P5. **REHAB24-6** (Zenodo 13305826): volunteers recorded with "
      "motion capture and video; used for angle accuracy and as the external test set. All results are preliminary and non-clinical.")
-h2("9.2 Joint-Angle Accuracy (RQ1)")
+h2("Joint-Angle Accuracy (RQ1)")
 rows = [["All frames", f"{a_all['n']:,}", f"{a_all['mae_deg']:.2f}", f"{a_all['rmse_deg']:.2f}", f"{a_all['pearson_r']:.2f}"]]
 for k, v in ang["by_exercise"].items():
     rows.append([k.replace("_", " "), f"{v['n']:,}", f"{v['mae_deg']:.2f}", f"{v['rmse_deg']:.2f}", f"{v['pearson_r']:.2f}"])
@@ -466,7 +530,7 @@ table(["Group", "Frames", "MAE (°)", "RMSE (°)", "Pearson r"], rows, [2.2, 1.0
 para(f"Bias {a_all['bias_deg']:.2f}°, 95% limits of agreement {a_all['loa95_deg'][0]:.1f}° to +{a_all['loa95_deg'][1]:.1f}°, over {ang['recordings']} recordings. "
      "The error depends on the camera (mean absolute error 9.0° for one camera and 4.3° for the other). Part of the error is definitional (motion-capture joint centres versus landmarks). "
      "Useful for counting and coarse range; not a clinical measurement.")
-h2("9.3 Repetition Counting (RQ2)")
+h2("Repetition Counting (RQ2)")
 crow = []
 for ds, nm in (("REHAB26 (MediaPipe skeletons)", "REHAB26"), ("REHAB24-6 (motion-capture joints)", "REHAB24-6")):
     for mode, lab in (("illustrative", "illustrative ranges"), ("auto", "per-user calibration")):
@@ -474,7 +538,7 @@ for ds, nm in (("REHAB26 (MediaPipe skeletons)", "REHAB26"), ("REHAB24-6 (motion
         crow.append([f"{nm}, {lab}", f"{r['labelled_repetitions']:,}", f"{r['detected_repetitions']:,}", f"{r['precision']:.2f}", f"{r['recall']:.2f}", f"{r['f1']:.2f}", f"{r['mean_absolute_count_error']:.2f}"])
 table(["Setting", "Labelled", "Detected", "Precision", "Recall", "F1", "Count error"], crow, [2.2, 0.7, 0.7, 0.7, 0.6, 0.5, 0.9], center=(1, 2, 3, 4, 5, 6))
 para("Calibration clearly helps on REHAB26 (F1 0.90 → 0.97, count error 1.0 → 0.2). On the REHAB24-6 motion-capture set it does not, so calibration is not a universal improvement.")
-h2("9.4 Movement-Quality Classification (RQ3–RQ5)")
+h2("Movement-Quality Classification (RQ3–RQ5)")
 figure(SHOTS / "fig-results.png", "Balanced accuracy of the quality model when trained on REHAB26 and tested on REHAB24-6", 5.6)
 para("Angle features alone are near chance (0.49). Posture and depth features raise it to 0.61, and a decision threshold chosen on training data only gives 0.686 "
      "(95% CI 0.625–0.761). Inside a single dataset (leave one person out) the model reaches about 0.72, so the gap reflects people and setup shift rather than the skeleton source. "
@@ -482,14 +546,14 @@ para("Angle features alone are near chance (0.49). Posture and depth features ra
      f"{ext['probability_calibration_on_test']['angle_only']['mean_predicted_probability']:.2f} for angle-only and "
      f"{ext['probability_calibration_on_test']['angle_plus_posture']['mean_predicted_probability']:.2f} with posture features, against {ext['test_incorrect_fraction']:.2f} observed; "
      "probabilities must not be shown to users as certainty.")
-h2("9.5 Backend Performance")
+h2("Backend Performance")
 table(["Measure", "Result"], [
     ["Analysis cost per sample", "about 4 µs"],
     ["WebSocket round trip", "mean 0.76 ms, 99th percentile 1.5 ms"],
     ["Budget", "one sample every 66 ms"],
 ], [3.0, 3.3])
 para("Measured in-process with a test client on one computer; it excludes the network and the browser's pose estimation.")
-h2("9.6 Reading the Results Honestly")
+h2("Reading the Results Honestly")
 bullets([
     "Transfer between datasets is modest; the in-domain figure is not what a new user should expect.",
     "Five training participants cannot support deployment-grade claims.",
@@ -498,13 +562,13 @@ bullets([
 ])
 
 # ---------- 10 ----------
-h1("10. How to Use the Application")
-h2("10.1 Starting the Application")
+h1("How to Use the Application", key="use")
+h2("Starting the Application")
 para("Native run (two terminals):")
 for line in ("cd backend ; .\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --port 8000", "cd frontend ; npm run dev"):
     para(line, size=9.5, after=2).runs[0].font.name = "Courier New"
-para("Then open http://localhost:5173. Docker alternative: `docker compose up --build` (nginx proxy); local HTTPS for phone use is described in docs/installation.md.")
-h2("10.2 Step-by-Step Usage")
+para("Then open http://localhost:5173 for the web companion, or open the Unity client (Section " + str(SEC["unity"]) + ") and press Play. Docker alternative: `docker compose up --build` (nginx proxy); local HTTPS for phone use is described in docs/installation.md.")
+h2("Step-by-Step Usage")
 bullets([
     "Open **Exercises** and pick an exercise; open **Live session** (or **AR overlay**).",
     "Press **Start camera** and allow the camera, or **Synthetic demo** to see the pipeline without a camera.",
@@ -513,12 +577,12 @@ bullets([
     "Report pain on the summary page if you feel any; the suggestion becomes more cautious.",
     "Open the **Dashboard** for trends, export CSV or a backup from **Settings & privacy**.",
 ])
-h2("10.3 Phone and Headset")
+h2("Phone and Headset")
 para("On the same Wi-Fi, create the development certificate (scripts/make_dev_cert.ps1), start Vite with HTTPS, open the computer's address on the phone, accept the "
-     "certificate warning and use the AR overlay with the back camera. The optional Unity 6 client (OpenXR packages installed) can show the room in VR; both phone and headset paths are untested.")
+     "certificate warning and use the AR overlay with the back camera. The Unity 6 client (OpenXR packages installed) can show the room in VR; both phone and headset paths are untested.")
 
 # ---------- 11 ----------
-h1("11. Privacy, Safety and Ethics")
+h1("Privacy, Safety and Ethics", key="privacy")
 bullets([
     "**Camera:** the browser asks for permission every time; pose estimation runs locally; video is not uploaded or stored and the camera is switched off when you stop.",
     "**Backend receives:** only joint-angle numbers and timestamps, on your own computer.",
@@ -529,18 +593,18 @@ bullets([
 ])
 
 # ---------- 12 ----------
-h1("12. Testing and Quality")
+h1("Testing and Quality", key="test")
 table(["Suite", "Scope", "Result"], [
     ["Backend (pytest)", "angle maths, counter, assessment, controller bounds (including property tests over long random histories), API validation and ownership, persistence, importers, evaluation code, rate limits, security headers, performance", f"{n_back} passed"],
     ["Frontend (vitest)", "pose guidance, WebXR helper, display options, components, pages, interactive features", f"{n_front} passed"],
     ["Type check (tsc)", "TypeScript strict check of the frontend", "clean" if tsc_ok else "not verified"],
     ["Production build (vite)", "bundle the frontend", "OK" if build_ok else "not verified"],
-    ["Unity (edit mode)", "client logic", "15 passed (last run earlier in the project)"],
+    ["Unity (edit mode)", "pose maths, trainer poses, message and relay parsing, HUD helpers", "15 passed earlier; 7 HUD test cases added but not run (Unity licence inactive today)"],
 ], [1.5, 3.5, 1.3])
 para("What tests cannot cover (a real camera, lighting, bodies, phones, headsets) is listed in docs/limitations-and-safety.md with a manual test protocol.")
 
 # ---------- 13 ----------
-h1("13. Scientific References and Standards")
+h1("Scientific References and Standards", key="refs")
 para("Only sources that are named in the project's own documentation are listed here. **The literature review (Chapter 2 of the thesis) is not written yet and no citations were invented**; "
      "verify each reference on its own page before using it.")
 bullets([
@@ -552,8 +616,8 @@ bullets([
 ])
 
 # ---------- 14 ----------
-h1("14. Limitations and Future Scope")
-h2("14.1 Current Limitations")
+h1("Limitations and Future Scope", key="limits")
+h2("Current Limitations")
 bullets([
     "Single-camera 2D angles are view dependent and are not clinical measurements.",
     "Small, healthy, non-patient samples; coarse labels; differences between datasets in camera, setting and labelling.",
@@ -563,7 +627,7 @@ bullets([
     "Immersive VR, phone use and the newer Unity features have not been tested by hand.",
     "Rate limits are shared per proxy IP behind nginx; the self-signed certificate is for a local network only.",
 ])
-h2("14.2 Remaining Work")
+h2("Remaining Work")
 table(["#", "Task", "Who or what is needed"], [
     ["1", "Webcam check on a laptop and a phone (manual protocol in the user guide)", "You, a webcam and a phone"],
     ["2", "Unity Play-mode check of the newer features", "You, the Unity Editor"],
@@ -573,7 +637,7 @@ table(["#", "Task", "Who or what is needed"], [
     ["6", "A study with participants (ethics approval first)", "Participants, ethics committee"],
     ["7", "VR on a headset", "An OpenXR/WebXR headset"],
 ], [0.4, 3.9, 2.0], center=(0,))
-h2("14.3 Future Enhancements")
+h2("Future Enhancements")
 bullets([
     "Browser end-to-end tests (Playwright).",
     "A recurrent-network (LSTM/GRU) baseline compared against the Random Forest.",
@@ -581,7 +645,7 @@ bullets([
 ])
 
 # ---------- 15 ----------
-h1("15. Glossary")
+h1("Glossary", key="gloss")
 table(["Term", "Meaning"], [
     ["Pose estimation", "Finding body landmarks (joints) in a camera image"],
     ["Landmark", "One of 33 body points returned by MediaPipe, with a visibility score"],
@@ -603,8 +667,8 @@ table(["Term", "Meaning"], [
 ], [1.9, 4.4])
 
 # ---------- 16 ----------
-h1("16. Live Verification (" + TODAY_LONG + ")")
-para("The application was started again from the project folder on Windows 11 (Python 3.10, Node, Vite) and every page in Section 7 was opened in a browser; "
+h1("Live Verification (" + TODAY_LONG + ")", key="verify")
+para("The application was started again from the project folder on Windows 11 (Python 3.10, Node, Vite) and every page in Sections " + f"{SEC['unity']} and {SEC['web']}" + " was opened in a browser; "
      "the screenshots in this report were captured from that running application. The synthetic demo figure was used on the Live session, Pose analysis, "
      "AR overlay and 3D room pages because no webcam test has been done yet. The automated checks were then run:")
 table(["Check", "Result"], [
@@ -612,10 +676,11 @@ table(["Check", "Result"], [
     ["Frontend tests", f"{n_front} passed"],
     ["TypeScript check", "clean" if tsc_ok else "not verified"],
     ["Frontend production build", "OK" if build_ok else "not verified"],
+    ["Unity compile and tests", "NOT run today: the Unity Editor reported no valid licence (sign in to Unity Hub to re-run)"],
     ["Pages opened and checked in a browser", "Home, Exercises, Live session, Pose analysis, AR overlay, 3D room, Research, Record data, Settings, Dashboard"],
     ["Interactive features checked in a browser", "Home demo counted a repetition; Ctrl+K palette navigated to the Dashboard"],
 ], [2.6, 3.7])
-para("Not verified: a real webcam on a laptop or phone, immersive VR on a headset, the Unity Play-mode check, and any study with people (Section 14.2).")
+para("Not verified: a real webcam on a laptop or phone, immersive VR on a headset, the Unity Play-mode check, and any study with people (Section " + str(SEC["limits"]) + ".2).")
 
 # ---------- footer, properties ----------
 sec = doc.sections[0]

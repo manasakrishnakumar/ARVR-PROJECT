@@ -4,6 +4,8 @@ ARVR is a local web application: a React/TypeScript frontend that runs pose esti
 counts repetitions, assesses movement quality, adapts difficulty, stores sessions in SQLite, and serves research results. Everything runs on one
 computer; no cloud service, paid API or special hardware is needed.
 
+> **Primary client:** the Unity 6 3D room (`unity-client/`) is the main application. It talks to this same backend (REST and `WS /api/ws/analysis`) and receives live pose from the browser through `WS /api/ws/relay/{room}`. The browser part described below is the companion that owns the camera and pose estimation.
+
 ```mermaid
 flowchart TD
     CAM[Webcam] --> POSE[Pose estimation in the browser<br/>MediaPipe Pose Landmarker, CPU]
