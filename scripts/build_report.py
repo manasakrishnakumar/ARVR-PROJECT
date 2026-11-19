@@ -358,8 +358,7 @@ bullets([
 ])
 note("**Verification status.** Earlier in the project the Unity client compiled with no errors, 15 edit-mode tests passed, a Windows player was built and ran, and the synthetic demo was "
      "run by hand in Play mode against the live backend (repetitions counted, feedback and suggestion shown). The newer HUD (big counter, phase pill, progress bar), the joint highlight, the torso "
-     "block, the floor grid and their 7 added test cases were written and reviewed but not compiled or run, because the Unity Editor licence on this computer was not active when this report was built; "
-     "open the project once in Unity Hub (signed in) to compile and run them.")
+     "block and the floor grid were added afterwards. On 19 November 2026 the project compiled and all 22 edit-mode tests passed in batch mode (15 earlier plus 7 for the HUD helpers). How the new HUD looks in Play mode has not yet been checked by eye.")
 figure_missing = not (SHOTS / "unity-room.png").exists()
 if figure_missing:
     note("**Figure to add:** a Game-view screenshot of the Unity room in Play mode (trainer in amber, user in teal, HUD on the left). Capture it after the first Play run and insert it here.")
@@ -599,7 +598,7 @@ table(["Suite", "Scope", "Result"], [
     ["Frontend (vitest)", "pose guidance, WebXR helper, display options, components, pages, interactive features", f"{n_front} passed"],
     ["Type check (tsc)", "TypeScript strict check of the frontend", "clean" if tsc_ok else "not verified"],
     ["Production build (vite)", "bundle the frontend", "OK" if build_ok else "not verified"],
-    ["Unity (edit mode)", "pose maths, trainer poses, message and relay parsing, HUD helpers", "15 passed earlier; 7 HUD test cases added but not run (Unity licence inactive today)"],
+    ["Unity (edit mode)", "pose maths, trainer poses, message and relay parsing, HUD helpers", "22 passed on 19 Nov 2026 (15 earlier + 7 HUD helper cases)"],
 ], [1.5, 3.5, 1.3])
 para("What tests cannot cover (a real camera, lighting, bodies, phones, headsets) is listed in docs/limitations-and-safety.md with a manual test protocol.")
 
@@ -676,7 +675,7 @@ table(["Check", "Result"], [
     ["Frontend tests", f"{n_front} passed"],
     ["TypeScript check", "clean" if tsc_ok else "not verified"],
     ["Frontend production build", "OK" if build_ok else "not verified"],
-    ["Unity compile and tests", "NOT run today: the Unity Editor reported no valid licence (sign in to Unity Hub to re-run)"],
+    ["Unity compile and tests", "Compiled and 22/22 edit-mode tests passed (batch mode, 19 Nov 2026); Play-mode look not yet checked"],
     ["Pages opened and checked in a browser", "Home, Exercises, Live session, Pose analysis, AR overlay, 3D room, Research, Record data, Settings, Dashboard"],
     ["Interactive features checked in a browser", "Home demo counted a repetition; Ctrl+K palette navigated to the Dashboard"],
 ], [2.6, 3.7])

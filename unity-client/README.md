@@ -40,6 +40,6 @@ $u = "C:\Program Files\Unity\Hub\Editor\6000.6.7f1\Editor\Unity.exe"; $p = "<pat
 Edit-mode tests (`Assets/Tests/EditMode`) cover the pose maths, trainer poses for four joint types on both sides, message and URL parsing, and the relay frame format.
 
 ## Verification status
-**Newer HUD changes (big counter, phase pill, progress bar, joint highlight, torso block, floor grid, 7 HudMath test cases) were written and reviewed but NOT compiled or run**: on 19 November 2026 the Editor reported "No valid Unity Editor license found" in batch mode. Sign in to Unity Hub, open the project once (it compiles on open) and run the tests below; then record the result in `docs/implementation-status.md`.
+**Verified on 19 November 2026:** the project compiles and all 22 edit-mode tests pass in batch mode (15 earlier + 7 HudMath). The newer HUD visuals (counter, phase pill, progress bar, joint highlight, torso, floor grid) have not yet been looked at in Play mode.
 
 See `docs/implementation-status.md` (Unity section) for what was verified and when; anything not listed there is untested.

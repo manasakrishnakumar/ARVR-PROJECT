@@ -148,6 +148,6 @@ Tested immersive VR (no headset), real-camera/phone verification of the AR page,
 ## Phase 11 - Unity as the primary application (19 November 2026)
 - [x] Project documents now present the Unity 6 room as the main application and the web app as its companion (README, architecture, unity-client/README, Word report section "Unity 3D Client").
 - [x] Unity HUD and visuals: big repetition counter, phase pill, progress bar, exercising-joint highlight coloured by phase, torso block on the figures, floor grid and rim light (`RehabRoom.cs`, `LandmarkFigure.cs`, new `HudMath.cs`), 7 new HudMath test cases in `ArvrTests.cs`.
-- [ ] **NOT compiled or run**: the Unity Editor reported "No valid Unity Editor license found" in batch mode, so these changes were only reviewed by reading. Sign in to Unity Hub, open `unity-client`, check the Console for compile errors, run the edit-mode tests (expected 22 = 15 + 7) and press Play; then tick this item.
+- [x] **Compiled and tested** (19 Nov 2026, batch mode): 22/22 edit-mode tests passed (15 + 7 HudMath). The Play-mode look of the new HUD is still to be checked by eye.
 - [ ] No real Unity screenshot yet (the Word report has a marked place for it: capture the Game view and save it as `docs/screenshots/unity-room.png`, then rebuild the report).
 - Blender is not used (all 3D objects are created in code); a Blender-modelled character is optional future work.
