@@ -29,3 +29,5 @@
 - KIMORE, IntelliRehabDS: Kinect-based; licence/access not confirmed.
 - Kaggle: no suitable movement-quality dataset found.
 
+
+- **Added for the Unity pose validation (Nov 2026)**: REHAB24-6 exercise 4 (leg abduction, 12 recordings, one camera each) videos were fetched from videos.zip by range reads (about 0.25 GB), and Python MediaPipe was run on their repetition ranges to give a like-for-like baseline. Used only for `docs/results/unity-pose.json`; not redistributed.

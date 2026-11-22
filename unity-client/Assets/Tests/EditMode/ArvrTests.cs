@@ -170,65 +170,83 @@ namespace Arvr.Tests
 
     public class OnDevicePoseTests
     {
-        static float[] Frame(float y, float x, float score)
+        static float[] Raw(float x, float y, float vis)
         {
-            var o = new float[51];
-            for (int k = 0; k < 17; k++) { o[k * 3] = y; o[k * 3 + 1] = x; o[k * 3 + 2] = score; }
-            return o;
+            var raw = new float[195];
+            for (int k = 0; k < 39; k++) { raw[k * 5] = x; raw[k * 5 + 1] = y; raw[k * 5 + 3] = vis; }
+            return raw;
         }
 
         [Test]
-        public void Mapper_PutsMoveNetKeypointsAtMediaPipeIndices()
+        public void Anchors_AreTheDetectorsExpectedCount()
         {
-            var o = Frame(0.5f, 0.5f, 0.9f);
-            o[5 * 3] = 0.3f; o[5 * 3 + 1] = 0.6f;   // COCO 5 = left shoulder -> MediaPipe 11
-            o[10 * 3] = 0.8f; o[10 * 3 + 1] = 0.1f; // COCO 10 = right wrist -> MediaPipe 16
-            var lm = MoveNetMapper.ToLandmarks(o);
+            Assert.AreEqual(BlazeMath.Anchors, BlazeMath.AnchorCentres().Length);
+        }
+
+        [Test]
+        public void Roi_UprightBodyHasNoRotationAndTheRightSize()
+        {
+            var r = BlazeMath.RoiFromKeypoints(new Vector2(300, 400), new Vector2(300, 300)); // scale point straight above the centre
+            Assert.AreEqual(0f, r.rot, 1e-4f);
+            Assert.AreEqual(2f * 100f * 1.25f, r.size, 1e-3f);
+        }
+
+        [Test]
+        public void Roi_BodyTiltedRightGivesAQuarterTurnMapping()
+        {
+            var r = BlazeMath.RoiFromKeypoints(new Vector2(300, 400), new Vector2(400, 400)); // scale point to the right of the centre
+            var top = BlazeMath.CropToImage(r, 0.5f, 0f);   // crop top-middle must land on the body-axis side (to the right)
+            Assert.Greater(top.x, 300f); Assert.AreEqual(400f, top.y, 1e-2f);
+        }
+
+        [Test]
+        public void Crop_CentreMapsToRoiCentre()
+        {
+            var p = BlazeMath.CropToImage(new BlazeMath.Roi { cx = 120, cy = 80, size = 200, rot = 0.7f }, 0.5f, 0.5f);
+            Assert.AreEqual(120f, p.x, 1e-3f); Assert.AreEqual(80f, p.y, 1e-3f);
+        }
+
+        [Test]
+        public void Decode_KeepsDepthAndFootPoints()
+        {
+            var raw = Raw(128f, 128f, 5f);               // every landmark at the crop centre, clearly visible
+            raw[31 * 5 + 2] = 64f;                        // landmark 31 (foot index) with depth
+            var lm = BlazeMath.DecodeLandmarks(raw, new BlazeMath.Roi { cx = 320, cy = 240, size = 256, rot = 0f }, 640, 480, out var c, out var s);
             Assert.AreEqual(33, lm.Length);
-            Assert.AreEqual(0.6f, lm[11].x, 1e-6f); Assert.AreEqual(0.3f, lm[11].y, 1e-6f);
-            Assert.AreEqual(0.1f, lm[16].x, 1e-6f); Assert.AreEqual(0.8f, lm[16].y, 1e-6f);
-        }
-
-        [Test]
-        public void Mapper_BadOutputGivesInvisibleLandmarks()
-        {
-            foreach (var lm in MoveNetMapper.ToLandmarks(null)) Assert.AreEqual(0f, lm.v);
-            foreach (var lm in MoveNetMapper.ToLandmarks(new float[3])) Assert.AreEqual(0f, lm.v);
+            Assert.AreEqual(0.5f, lm[29].x, 1e-4f); Assert.AreEqual(0.5f, lm[29].y, 1e-4f); // heel present
+            Assert.Greater(lm[29].v, 0.9f);
+            Assert.AreEqual(64f / 256f * 256f / 640f, lm[31].z, 1e-4f);                      // depth kept
+            Assert.AreEqual(320f, c.x, 1e-3f);
         }
 
         [Test]
         public void Angle_IsNullWhenAJointIsNotConfident()
         {
-            var o = Frame(0.5f, 0.5f, 0.9f);
-            o[7 * 3 + 2] = 0.1f; // left elbow (MediaPipe 13) below threshold
-            var lm = MoveNetMapper.ToLandmarks(o);
-            Assert.IsNull(MoveNetMapper.AngleIfConfident(lm, 11, 13, 15));
+            var lm = BlazeMath.DecodeLandmarks(Raw(128f, 128f, 5f), new BlazeMath.Roi { cx = 320, cy = 240, size = 256 }, 640, 480, out _, out _);
+            lm[13] = new Lm(lm[13].x, lm[13].y, 0f, 0.1f);
+            Assert.IsNull(BlazeMath.AngleIfConfident(lm, 11, 13, 15));
         }
 
         [Test]
-        public void Angle_RightAngleIsAboutNinety()
+        public void BestDetection_PicksTheHighestScoreAndRejectsWeakOnes()
         {
-            var o = Frame(0.5f, 0.5f, 0.9f);
-            o[5 * 3] = 0.2f; o[5 * 3 + 1] = 0.5f;   // shoulder above the elbow
-            o[7 * 3] = 0.5f; o[7 * 3 + 1] = 0.5f;   // elbow
-            o[9 * 3] = 0.5f; o[9 * 3 + 1] = 0.8f;   // wrist to the side
-            var a = MoveNetMapper.AngleIfConfident(MoveNetMapper.ToLandmarks(o), 11, 13, 15);
-            Assert.IsNotNull(a); Assert.AreEqual(90f, a.Value, 1f);
+            var boxes = new float[BlazeMath.Anchors * 12]; var scores = new float[BlazeMath.Anchors];
+            for (int i = 0; i < scores.Length; i++) scores[i] = -10f;
+            Assert.IsFalse(BlazeMath.BestDetection(boxes, scores, 0.5f, out _, out _, out _));
+            scores[100] = 4f;
+            Assert.IsTrue(BlazeMath.BestDetection(boxes, scores, 0.5f, out var k0, out _, out var sc));
+            Assert.Greater(sc, 0.9f);
+            Assert.AreEqual(BlazeMath.AnchorCentres()[100].x, k0.x, 1e-5f);
         }
 
         [Test]
-        public void Model_LoadsAndRunsOnABlankImage()
+        public void Models_LoadAndRunWithoutAPersonInTheFrame()
         {
-            var asset = Resources.Load<Unity.InferenceEngine.ModelAsset>("movenet_lightning");
-            Assert.IsNotNull(asset, "Assets/Resources/movenet_lightning.onnx is missing");
-            using var worker = new Unity.InferenceEngine.Worker(Unity.InferenceEngine.ModelLoader.Load(asset), Unity.InferenceEngine.BackendType.CPU);
-            var data = new int[OnDevicePose.Size * OnDevicePose.Size * 3];
-            for (int i = 0; i < data.Length; i++) data[i] = 128;
-            using var input = new Unity.InferenceEngine.Tensor<int>(new Unity.InferenceEngine.TensorShape(1, OnDevicePose.Size, OnDevicePose.Size, 3), data);
-            worker.Schedule(input);
-            var arr = (worker.PeekOutput() as Unity.InferenceEngine.Tensor<float>).DownloadToArray();
-            Assert.AreEqual(51, arr.Length);
-            foreach (var v in arr) Assert.IsFalse(float.IsNaN(v));
+            using var engine = BlazePoseEngine.FromResources();
+            var blank = new byte[320 * 240 * 3];
+            for (int i = 0; i < blank.Length; i++) blank[i] = 128;
+            Assert.IsNull(engine.Run(blank, 320, 240)); // a flat grey frame has no person
+            Assert.IsTrue(engine.DetectorUsedLastFrame);
         }
     }
 }

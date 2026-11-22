@@ -122,9 +122,9 @@ namespace Arvr
                                       : $"Backend not reachable ({client.LastError}); the room still runs.";
             if (source == Source.OnDeviceCamera)
             {
-                onDevice = new OnDevicePose(Resources.Load<Unity.InferenceEngine.ModelAsset>("movenet_lightning"));
+                onDevice = new OnDevicePose();
                 if (onDevice.Error != null) { status = onDevice.Error; onDevice = null; yield break; }
-                status = "On-device pose (MoveNet via Unity Inference Engine). Stand in view of the camera.";
+                status = "On-device pose (BlazePose via Unity Inference Engine). Stand in view of the camera.";
             }
             t0 = Time.time; running = true;
         }
@@ -175,7 +175,7 @@ namespace Arvr
                     var names = ex.landmarks;
                     if (names != null && names.Length >= 3 && PoseMath.Index.TryGetValue(names[0], out var ia) && PoseMath.Index.TryGetValue(names[1], out var ib) && PoseMath.Index.TryGetValue(names[2], out var ic))
                     {
-                        var a = MoveNetMapper.AngleIfConfident(onDevice.Latest, ia, ib, ic);
+                        var a = BlazeMath.AngleIfConfident(onDevice.Latest, ia, ib, ic);
                         angle = a ?? float.NaN;
                         if (a.HasValue && client != null && Time.time - lastSend >= 1f / sendHz) { lastSend = Time.time; client.Send(t, a.Value); }
                     }

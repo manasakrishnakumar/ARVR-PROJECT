@@ -1,4 +1,0 @@
-movenet_lightning.onnx: MoveNet SinglePose Lightning (Google), Apache License 2.0.
-ONNX conversion: https://huggingface.co/Xenova/movenet-singlepose-lightning (Apache-2.0).
-Input 1x192x192x3 int 0..255; output [1,1,17,3] = (y, x, score).
-Used only by the optional On-device camera source (OnDevicePose.cs).

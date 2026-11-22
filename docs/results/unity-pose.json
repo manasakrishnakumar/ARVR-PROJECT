@@ -1,0 +1,173 @@
+{
+  "kind": "unity-pose",
+  "title": "Unity on-device pose (BlazePose via Inference Engine) vs motion capture (REHAB24-6)",
+  "caveat": "Reference = optical motion capture projected to the camera image (definitional differences count as error). 2D image-plane angles, three exercises, two cameras, frames every 3rd frame at 640 px wide, Unity CPU backend, single run.",
+  "data": {
+    "recordings": 43,
+    "frames_sampled": 38997,
+    "frames_with_person_found": 38954,
+    "detection_rate": 0.998897351078288,
+    "unity_vs_mocap": {
+      "n": 23062,
+      "mae_deg": 8.424000670346476,
+      "rmse_deg": 13.793252063381265,
+      "bias_deg": 1.1312457617357186,
+      "loa95_deg": [
+        -25.81303613644349,
+        28.07552765991493
+      ],
+      "pearson_r": 0.9710942008064306
+    },
+    "unity_mae_ci95": [
+      7.42137853284899,
+      9.391475714826719
+    ],
+    "mediapipe_vs_mocap_same_frames": {
+      "n": 23062,
+      "mae_deg": 7.319511552556448,
+      "rmse_deg": 12.638382265983633,
+      "bias_deg": -0.3101968223788736,
+      "loa95_deg": [
+        -25.074500642384017,
+        24.45410699762627
+      ],
+      "pearson_r": 0.9762466081927166
+    },
+    "mediapipe_mae_ci95": [
+      6.311464661833841,
+      8.312305073586161
+    ],
+    "unity_vs_mediapipe_mean_abs_diff_deg": 4.089660376003347,
+    "by_exercise": {
+      "shoulder_abduction": {
+        "unity": {
+          "n": 9476,
+          "mae_deg": 9.29197101305483,
+          "rmse_deg": 17.703094607915848,
+          "bias_deg": -6.972608147915282,
+          "loa95_deg": [
+            -38.86767072394785,
+            24.92245442811729
+          ],
+          "pearson_r": 0.9548858460066367
+        },
+        "mediapipe": {
+          "n": 9476,
+          "mae_deg": 8.919611472236406,
+          "rmse_deg": 17.1635763469134,
+          "bias_deg": -7.486714906450542,
+          "loa95_deg": [
+            -37.759841490843996,
+            22.78641167794291
+          ],
+          "pearson_r": 0.9588665627141403
+        }
+      },
+      "sit_to_stand": {
+        "unity": {
+          "n": 6915,
+          "mae_deg": 9.583015861448748,
+          "rmse_deg": 11.911347892312545,
+          "bias_deg": 8.776349343309338,
+          "loa95_deg": [
+            -7.009291733831018,
+            24.561990420449696
+          ],
+          "pearson_r": 0.9783684612410194
+        },
+        "mediapipe": {
+          "n": 6915,
+          "mae_deg": 6.789524784616201,
+          "rmse_deg": 8.760908041061088,
+          "bias_deg": 5.1949478154639275,
+          "loa95_deg": [
+            -8.63287993314107,
+            19.022775564068922
+          ],
+          "pearson_r": 0.9817806944847512
+        }
+      },
+      "hip_abduction": {
+        "unity": {
+          "n": 6671,
+          "mae_deg": 5.989661438750527,
+          "rmse_deg": 8.091417900485277,
+          "bias_deg": 4.717848726998995,
+          "loa95_deg": [
+            -8.167481920393403,
+            17.60317937439139
+          ],
+          "pearson_r": 0.9466954780632487
+        },
+        "mediapipe": {
+          "n": 6671,
+          "mae_deg": 5.595978598189715,
+          "rmse_deg": 7.360287888060228,
+          "bias_deg": 4.177377783224508,
+          "loa95_deg": [
+            -7.701072554875457,
+            16.055828121324474
+          ],
+          "pearson_r": 0.9571714254467427
+        }
+      }
+    },
+    "by_camera": {
+      "cam17": {
+        "unity": {
+          "n": 19554,
+          "mae_deg": 8.424412021336297,
+          "rmse_deg": 14.335864318869893,
+          "bias_deg": -0.0038917298025390725,
+          "loa95_deg": [
+            -28.102903266412053,
+            28.095119806806974
+          ],
+          "pearson_r": 0.9713657328267463
+        },
+        "mediapipe": {
+          "n": 19554,
+          "mae_deg": 7.856275283766604,
+          "rmse_deg": 13.495172216326955,
+          "bias_deg": -0.6735538260446851,
+          "loa95_deg": [
+            -27.091801147652966,
+            25.744693495563595
+          ],
+          "pearson_r": 0.9750735586248356
+        }
+      },
+      "cam18": {
+        "unity": {
+          "n": 3508,
+          "mae_deg": 8.421707752086794,
+          "rmse_deg": 10.255483029927962,
+          "bias_deg": 7.458634162402506,
+          "loa95_deg": [
+            -6.33924181993744,
+            21.25651014474245
+          ],
+          "pearson_r": 0.9805557389744044
+        },
+        "mediapipe": {
+          "n": 3508,
+          "mae_deg": 4.327528086170081,
+          "rmse_deg": 5.909217621675977,
+          "bias_deg": 1.7151973765040458,
+          "loa95_deg": [
+            -9.369823249060586,
+            12.800218002068677
+          ],
+          "pearson_r": 0.9889011457894845
+        }
+      }
+    },
+    "foot_points_mean_visibility": {
+      "left_heel": 0.9282511375056426,
+      "right_heel": 0.8903374426595343,
+      "left_foot_index": 0.9763282458098347,
+      "right_foot_index": 0.9545521281437722
+    },
+    "depth_z_range_median": 0.5353491975
+  }
+}

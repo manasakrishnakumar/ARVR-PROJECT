@@ -196,6 +196,7 @@ today = date.today()
 TODAY_LONG = f"{today.day} {today.strftime('%B %Y')}"
 
 ang = load("angle-accuracy.json")["data"]
+upose = load("unity-pose.json")["data"]
 cnt = load("counting.json")["data"]
 ext = load("external-mocap.json")["data"]
 perf = load("performance.json")
@@ -323,7 +324,7 @@ para("The Unity client is the main application of the project: the 3D rehabilita
      "so counting, quality assessment, calibration and the adaptive suggestion are identical everywhere.")
 para("The web application plays a supporting role: it captures the camera, runs pose estimation (MediaPipe, in the browser) and provides accounts, the dashboard "
      "and the research pages. Its **3D room** page can publish the live pose, as numbers only, to a room code on the local backend, and the Unity client joins that room and mirrors the user.")
-note("**On-device pose (optional feature).** Unity can also read the webcam itself and run the MoveNet Lightning pose model (ONNX, Apache-2.0) with Unity's Inference Engine (formerly Sentis); the angle is computed in Unity and streamed to the same backend. The model loads and runs in the tests, but its accuracy and a live webcam run have not been validated; the validated path remains MediaPipe in the browser, relayed to Unity.")
+note("**On-device pose (optional feature).** Unity can also read the webcam itself and run MediaPipe BlazePose (ONNX, Apache-2.0: a detector plus a landmark model with tracking) with Unity's Inference Engine (formerly Sentis); it gives 33 landmarks with depth and heel and foot points, and the angle is computed in Unity and streamed to the same backend. Its accuracy was measured on recorded REHAB24-6 video (Section " + str(SEC["eval"]) + "): about 8.4° angle error versus 7.3° for MediaPipe in Python on the same frames, on three exercises. A live webcam run in Unity has not been tested; the browser MediaPipe path remains the main one.")
 note("**Honest limits.** The validated pose estimation (MediaPipe) runs in the browser, and real pose reaches Unity through the relay. "
      "Blender was not used; every 3D object is created in Unity from primitives in code. VR is prepared (OpenXR packages installed) but has not been tried on a headset.")
 h2("Features")
@@ -359,7 +360,7 @@ bullets([
 ])
 note("**Verification status.** Earlier in the project the Unity client compiled with no errors, 15 edit-mode tests passed, a Windows player was built and ran, and the synthetic demo was "
      "run by hand in Play mode against the live backend (repetitions counted, feedback and suggestion shown). The newer HUD (big counter, phase pill, progress bar), the joint highlight, the torso "
-     "block and the floor grid were added afterwards. On 19 November 2026 the project compiled and all 27 edit-mode tests passed in batch mode (15 earlier, 7 for the HUD helpers and 5 for the on-device pose feature). The same day the room was run in Play mode through an editor script (Arvr.Editor.CaptureRoom) against the live backend, and the figure below is that Game-view capture: trainer demo, repetition counter, phase label, progress bar, torso and highlighted joint.")
+     "block and the floor grid were added afterwards. On 19 November 2026 the project compiled and all 30 edit-mode tests passed in batch mode (15 earlier, 7 for the HUD helpers and 8 for the on-device pose feature). The same day the room was run in Play mode through an editor script (Arvr.Editor.CaptureRoom) against the live backend, and the figure below is that Game-view capture: trainer demo, repetition counter, phase label, progress bar, torso and highlighted joint.")
 figure_missing = not (SHOTS / "unity-room.png").exists()
 if figure_missing:
     note("**Figure to add:** a Game-view screenshot of the Unity room in Play mode (trainer in amber, user in teal, HUD on the left). Capture it after the first Play run and insert it here.")
@@ -530,6 +531,26 @@ table(["Group", "Frames", "MAE (°)", "RMSE (°)", "Pearson r"], rows, [2.2, 1.0
 para(f"Bias {a_all['bias_deg']:.2f}°, 95% limits of agreement {a_all['loa95_deg'][0]:.1f}° to +{a_all['loa95_deg'][1]:.1f}°, over {ang['recordings']} recordings. "
      "The error depends on the camera (mean absolute error 9.0° for one camera and 4.3° for the other). Part of the error is definitional (motion-capture joint centres versus landmarks). "
      "Useful for counting and coarse range; not a clinical measurement.")
+h2("Unity On-Device Pose vs Motion Capture")
+um, mm = upose["unity_vs_mocap"], upose["mediapipe_vs_mocap_same_frames"]
+rows = [["Unity (BlazePose, Inference Engine)", f"{um['n']:,}", f"{um['mae_deg']:.2f}", f"{upose['unity_mae_ci95'][0]:.1f} to {upose['unity_mae_ci95'][1]:.1f}", f"{um['rmse_deg']:.2f}", f"{um['pearson_r']:.3f}"],
+        ["MediaPipe (Python), same frames", f"{mm['n']:,}", f"{mm['mae_deg']:.2f}", f"{upose['mediapipe_mae_ci95'][0]:.1f} to {upose['mediapipe_mae_ci95'][1]:.1f}", f"{mm['rmse_deg']:.2f}", f"{mm['pearson_r']:.3f}"]]
+table(["Pose source", "Frames", "MAE (°)", "95% CI of MAE (°)", "RMSE (°)", "Pearson r"], rows, [2.3, 0.8, 0.8, 1.2, 0.8, 0.9], center=(1, 2, 3, 4, 5))
+rows = []
+for k, v in upose["by_exercise"].items():
+    rows.append([k.replace("_", " "), f"{v['unity']['n']:,}", f"{v['unity']['mae_deg']:.2f}", f"{v['mediapipe']['mae_deg']:.2f}"])
+for k, v in upose["by_camera"].items():
+    rows.append([k.replace("cam", "camera "), f"{v['unity']['n']:,}", f"{v['unity']['mae_deg']:.2f}", f"{v['mediapipe']['mae_deg']:.2f}"])
+table(["Group", "Frames", "Unity MAE (°)", "MediaPipe MAE (°)"], rows, [2.2, 1.0, 1.4, 1.6], center=(1, 2, 3))
+fv = upose["foot_points_mean_visibility"]
+para(f"The optional on-device pose feature of the Unity client (MediaPipe BlazePose as ONNX, run by Unity's Inference Engine) was tested on {upose['recordings']} real REHAB24-6 recordings "
+     f"({upose['frames_sampled']:,} frames sampled every third frame at 640 px wide, like a webcam; a person was found in {upose['detection_rate'] * 100:.1f}% of them). "
+     f"Its angle error against motion capture is {um['mae_deg']:.1f}° (bias {um['bias_deg']:+.1f}°), about {um['mae_deg'] - mm['mae_deg']:.1f}° worse than Python MediaPipe at full resolution on the same frames; the two confidence intervals overlap, "
+     f"so the difference is small but should not be called zero. The Unity and MediaPipe angles differ from each other by {upose['unity_vs_mediapipe_mean_abs_diff_deg']:.1f}° on average. "
+     "It was clearly worse on the second camera and on sit-to-stand (see the table). The model also supplies depth (z) and heel and foot points: "
+     f"mean visibility was {fv['left_heel']:.2f} and {fv['right_heel']:.2f} for the heels and {fv['left_foot_index']:.2f} and {fv['right_foot_index']:.2f} for the foot points.")
+note("**Limits of this validation.** Three of the nine library exercises have a matching reference (shoulder abduction, sit-to-stand, hip abduction = the dataset's leg abduction); the other six are not validated. "
+     "Two cameras, one run, CPU backend, 2D image-plane angles, and motion capture is a reference rather than ground truth. Recorded video frames were used: a live webcam run in Unity has not been tested.")
 h2("Repetition Counting (RQ2)")
 crow = []
 for ds, nm in (("REHAB26 (MediaPipe skeletons)", "REHAB26"), ("REHAB24-6 (motion-capture joints)", "REHAB24-6")):
@@ -599,7 +620,7 @@ table(["Suite", "Scope", "Result"], [
     ["Frontend (vitest)", "pose guidance, WebXR helper, display options, components, pages, interactive features", f"{n_front} passed"],
     ["Type check (tsc)", "TypeScript strict check of the frontend", "clean" if tsc_ok else "not verified"],
     ["Production build (vite)", "bundle the frontend", "OK" if build_ok else "not verified"],
-    ["Unity (edit mode)", "pose maths, trainer poses, message and relay parsing, HUD helpers", "27 passed (15 earlier + 7 HUD helper + 5 on-device pose cases)"],
+    ["Unity (edit mode)", "pose maths, trainer poses, message and relay parsing, HUD helpers", "30 passed (15 earlier + 7 HUD helper + 8 on-device pose cases)"],
 ], [1.5, 3.5, 1.3])
 para("What tests cannot cover (a real camera, lighting, bodies, phones, headsets) is listed in docs/limitations-and-safety.md with a manual test protocol.")
 
@@ -676,7 +697,7 @@ table(["Check", "Result"], [
     ["Frontend tests", f"{n_front} passed"],
     ["TypeScript check", "clean" if tsc_ok else "not verified"],
     ["Frontend production build", "OK" if build_ok else "not verified"],
-    ["Unity compile and tests", "Compiled; 27/27 edit-mode tests passed (batch mode); Play mode run and captured (19 Nov 2026)"],
+    ["Unity compile and tests", "Compiled; 30/30 edit-mode tests passed (batch mode); Play mode run and captured (19 Nov 2026)"],
     ["Pages opened and checked in a browser", "Home, Exercises, Live session, Pose analysis, AR overlay, 3D room, Research, Record data, Settings, Dashboard"],
     ["Interactive features checked in a browser", "Home demo counted a repetition; Ctrl+K palette navigated to the Dashboard"],
 ], [2.6, 3.7])
