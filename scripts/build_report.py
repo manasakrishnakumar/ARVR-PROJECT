@@ -324,7 +324,7 @@ para("The Unity client is the main application of the project: the 3D rehabilita
      "so counting, quality assessment, calibration and the adaptive suggestion are identical everywhere.")
 para("The web application plays a supporting role: it captures the camera, runs pose estimation (MediaPipe, in the browser) and provides accounts, the dashboard "
      "and the research pages. Its **3D room** page can publish the live pose, as numbers only, to a room code on the local backend, and the Unity client joins that room and mirrors the user.")
-note("**On-device pose (optional feature).** Unity can also read the webcam itself and run MediaPipe BlazePose (ONNX, Apache-2.0: a detector plus a landmark model with tracking) with Unity's Inference Engine (formerly Sentis); it gives 33 landmarks with depth and heel and foot points, and the angle is computed in Unity and streamed to the same backend. Its accuracy was measured on recorded REHAB24-6 video (Section " + str(SEC["eval"]) + "): about 8.4° angle error versus 7.3° for MediaPipe in Python on the same frames, on three exercises. A live webcam run in Unity has not been tested; the browser MediaPipe path remains the main one.")
+note("**On-device pose (optional feature).** Unity can also read the webcam itself and run MediaPipe BlazePose (ONNX, Apache-2.0: a detector plus a landmark model with tracking) with Unity's Inference Engine (formerly Sentis); it gives 33 landmarks with depth and heel and foot points, and the angle is computed in Unity and streamed to the same backend. Its accuracy was measured on recorded REHAB24-6 video (Section " + str(SEC["eval"]) + "): about 8.1° angle error versus 6.9° for MediaPipe in Python on the same frames, over 81 recording-and-exercise combinations covering seven exercises. A live webcam run in Unity has not been tested; the browser MediaPipe path remains the main one.")
 note("**Honest limits.** The validated pose estimation (MediaPipe) runs in the browser, and real pose reaches Unity through the relay. "
      "Blender was not used; every 3D object is created in Unity from primitives in code. VR is prepared (OpenXR packages installed) but has not been tried on a headset.")
 h2("Features")
@@ -431,7 +431,7 @@ figure(SHOTS / "research.jpg", "Research page: the simulation table is clearly l
 
 # ---------- 6 ----------
 h1("Exercise Library", key="ex")
-para("Nine exercises are defined as JSON files; start and target angles are illustrative placeholders, not prescriptions. All use three levels "
+para("Thirteen exercises are defined as JSON files (nine original plus lunge, push-up, squat and arm raise overhead, whose start and target angles were taken from the median motion-capture ranges of REHAB24-6); start and target angles are illustrative placeholders, not prescriptions. All use three levels "
      "(5, 8 and 10 repetitions; 60%, 75% and 90% of the range; minimum repetition time 1.5, 1.2 and 1.0 s).")
 ex_rows = []
 for fp in sorted((ROOT / "backend/app/exercises/definitions").glob("*.json")):
@@ -543,13 +543,13 @@ for k, v in upose["by_camera"].items():
     rows.append([k.replace("cam", "camera "), f"{v['unity']['n']:,}", f"{v['unity']['mae_deg']:.2f}", f"{v['mediapipe']['mae_deg']:.2f}"])
 table(["Group", "Frames", "Unity MAE (°)", "MediaPipe MAE (°)"], rows, [2.2, 1.0, 1.4, 1.6], center=(1, 2, 3))
 fv = upose["foot_points_mean_visibility"]
-para(f"The optional on-device pose feature of the Unity client (MediaPipe BlazePose as ONNX, run by Unity's Inference Engine) was tested on {upose['recordings']} real REHAB24-6 recordings "
+para(f"The optional on-device pose feature of the Unity client (MediaPipe BlazePose as ONNX, run by Unity's Inference Engine) was tested on {upose['recordings']} real REHAB24-6 recording-and-exercise combinations (some recordings serve two exercises) "
      f"({upose['frames_sampled']:,} frames sampled every third frame at 640 px wide, like a webcam; a person was found in {upose['detection_rate'] * 100:.1f}% of them). "
      f"Its angle error against motion capture is {um['mae_deg']:.1f}° (bias {um['bias_deg']:+.1f}°), about {um['mae_deg'] - mm['mae_deg']:.1f}° worse than Python MediaPipe at full resolution on the same frames; the two confidence intervals overlap, "
      f"so the difference is small but should not be called zero. The Unity and MediaPipe angles differ from each other by {upose['unity_vs_mediapipe_mean_abs_diff_deg']:.1f}° on average. "
      "It was clearly worse on the second camera and on sit-to-stand (see the table). The model also supplies depth (z) and heel and foot points: "
      f"mean visibility was {fv['left_heel']:.2f} and {fv['right_heel']:.2f} for the heels and {fv['left_foot_index']:.2f} and {fv['right_foot_index']:.2f} for the foot points.")
-note("**Limits of this validation.** Three of the nine library exercises have a matching reference (shoulder abduction, sit-to-stand, hip abduction = the dataset's leg abduction); the other six are not validated. "
+note("**Limits of this validation.** Seven of the thirteen library exercises have a matching reference in REHAB24-6 (shoulder abduction, sit-to-stand, squat, hip abduction = leg abduction, lunge, push-up, arm raise overhead = arm V/W), and the hip angle of the lunge adds a joint-level check; the knee flexion, elbow flexion and shoulder flexion exercises use the same landmark triples as the lunge, push-up and arm raise, so their angle measurement is covered indirectly. Hip flexion has only the lunge check. Seated knee extension and shoulder extension have no matching reference and are not validated. **The push-up is poor for both pose sources** (about 20° error, few usable frames, correlation 0.55), so do not rely on camera-based push-up measurement. "
      "Two cameras, one run, CPU backend, 2D image-plane angles, and motion capture is a reference rather than ground truth. Recorded video frames were used: a live webcam run in Unity has not been tested.")
 h2("Repetition Counting (RQ2)")
 crow = []

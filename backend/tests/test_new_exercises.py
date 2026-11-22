@@ -5,7 +5,7 @@ import pytest
 from app.exercises.library import get_exercise, load_exercises
 from app.services.analysis import analyze_series
 
-NEW = ["hip_abduction", "hip_flexion", "knee_extension_seated"]
+NEW = ["hip_abduction", "hip_flexion", "knee_extension_seated", "lunge", "push_up", "squat", "arm_raise_overhead"]
 
 
 def sweep(ex, reps=6, period=3.0, hz=15):
@@ -40,5 +40,5 @@ def test_a_tiny_movement_is_never_judged_acceptable(ex_id):
     assert all(r.assessment.label != "acceptable" for r in res.attempts)
 
 
-def test_library_lists_all_nine_exercises_and_ids_match_file_names():
-    assert len(load_exercises()) == 9
+def test_library_lists_all_thirteen_exercises_and_ids_match_file_names():
+    assert len(load_exercises()) == 13

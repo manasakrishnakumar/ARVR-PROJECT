@@ -19,7 +19,7 @@ Home rehabilitation depends on correct execution and suitable difficulty, but pa
 ## 3. Requirements and system design
 **Constraints**: a laptop with a webcam, CPU only, open-source components, privacy by design (video never leaves the browser; the backend receives joint-angle numbers only; local database).
 **Architecture** (`docs/architecture.md`): browser pose estimation (MediaPipe Pose Landmarker, lite model, running in the page) -> joint angle with confidence gating -> WebSocket to the backend -> stream analyzer (smoothing, state-machine repetition counter with hysteresis, optional per-user range calibration) -> rule-based assessment -> session persistence -> adaptive controller -> recommendation. Presentation layers (live page, AR overlay, 3D room, Unity) share this pipeline, so counting and suggestions are identical everywhere.
-**Exercise library**: nine exercises defined as data (JSON); targets are illustrative placeholders, not prescriptions.
+**Exercise library**: thirteen exercises defined as data (JSON; nine original plus lunge, push-up, squat and arm raise overhead); targets are illustrative placeholders, not prescriptions.
 **Safety design**: unreliable data never raises difficulty; changes are one step at a time between sessions; two confirming sessions; a dead zone; reported pain only makes the suggestion more cautious; every suggestion carries its reasons; accounts are optional and data can be exported, backed up and deleted.
 
 ## 4. Methods

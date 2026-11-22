@@ -26,7 +26,8 @@ RANGE_ERRORS = {"ERR_LOW_ABDUCTION", "ERR_SHALLOW_SQUAT"}  # the only errors our
 # (shoulder extension has no range-type error code, so all its errors are posture deviations)
 VISIBLE_ENOUGH = 0.8  # a camera is usable if the exercise's joints are visible in at least this fraction of frames
 JOINT = {"LEFT_SHOULDER": 11, "RIGHT_SHOULDER": 12, "LEFT_ELBOW": 13, "RIGHT_ELBOW": 14, "LEFT_HIP": 23,
-         "RIGHT_HIP": 24, "LEFT_KNEE": 25, "RIGHT_KNEE": 26, "LEFT_ANKLE": 27, "RIGHT_ANKLE": 28}
+         "RIGHT_HIP": 24, "LEFT_KNEE": 25, "RIGHT_KNEE": 26, "LEFT_ANKLE": 27, "RIGHT_ANKLE": 28,
+         "LEFT_WRIST": 15, "RIGHT_WRIST": 16}
 
 
 def map_label(correctness: str, error_code: str) -> str:
