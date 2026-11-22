@@ -1,7 +1,7 @@
 {
   "name": "Arvr.Runtime",
   "rootNamespace": "Arvr",
-  "references": [],
+  "references": [ "Unity.InferenceEngine" ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

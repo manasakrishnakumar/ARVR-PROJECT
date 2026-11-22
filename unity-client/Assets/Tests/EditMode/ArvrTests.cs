@@ -167,4 +167,68 @@ namespace Arvr.Tests
             Assert.AreEqual("Waiting", HudMath.PhaseLabel(null));
         }
     }
+
+    public class OnDevicePoseTests
+    {
+        static float[] Frame(float y, float x, float score)
+        {
+            var o = new float[51];
+            for (int k = 0; k < 17; k++) { o[k * 3] = y; o[k * 3 + 1] = x; o[k * 3 + 2] = score; }
+            return o;
+        }
+
+        [Test]
+        public void Mapper_PutsMoveNetKeypointsAtMediaPipeIndices()
+        {
+            var o = Frame(0.5f, 0.5f, 0.9f);
+            o[5 * 3] = 0.3f; o[5 * 3 + 1] = 0.6f;   // COCO 5 = left shoulder -> MediaPipe 11
+            o[10 * 3] = 0.8f; o[10 * 3 + 1] = 0.1f; // COCO 10 = right wrist -> MediaPipe 16
+            var lm = MoveNetMapper.ToLandmarks(o);
+            Assert.AreEqual(33, lm.Length);
+            Assert.AreEqual(0.6f, lm[11].x, 1e-6f); Assert.AreEqual(0.3f, lm[11].y, 1e-6f);
+            Assert.AreEqual(0.1f, lm[16].x, 1e-6f); Assert.AreEqual(0.8f, lm[16].y, 1e-6f);
+        }
+
+        [Test]
+        public void Mapper_BadOutputGivesInvisibleLandmarks()
+        {
+            foreach (var lm in MoveNetMapper.ToLandmarks(null)) Assert.AreEqual(0f, lm.v);
+            foreach (var lm in MoveNetMapper.ToLandmarks(new float[3])) Assert.AreEqual(0f, lm.v);
+        }
+
+        [Test]
+        public void Angle_IsNullWhenAJointIsNotConfident()
+        {
+            var o = Frame(0.5f, 0.5f, 0.9f);
+            o[7 * 3 + 2] = 0.1f; // left elbow (MediaPipe 13) below threshold
+            var lm = MoveNetMapper.ToLandmarks(o);
+            Assert.IsNull(MoveNetMapper.AngleIfConfident(lm, 11, 13, 15));
+        }
+
+        [Test]
+        public void Angle_RightAngleIsAboutNinety()
+        {
+            var o = Frame(0.5f, 0.5f, 0.9f);
+            o[5 * 3] = 0.2f; o[5 * 3 + 1] = 0.5f;   // shoulder above the elbow
+            o[7 * 3] = 0.5f; o[7 * 3 + 1] = 0.5f;   // elbow
+            o[9 * 3] = 0.5f; o[9 * 3 + 1] = 0.8f;   // wrist to the side
+            var a = MoveNetMapper.AngleIfConfident(MoveNetMapper.ToLandmarks(o), 11, 13, 15);
+            Assert.IsNotNull(a); Assert.AreEqual(90f, a.Value, 1f);
+        }
+
+        [Test]
+        public void Model_LoadsAndRunsOnABlankImage()
+        {
+            var asset = Resources.Load<Unity.InferenceEngine.ModelAsset>("movenet_lightning");
+            Assert.IsNotNull(asset, "Assets/Resources/movenet_lightning.onnx is missing");
+            using var worker = new Unity.InferenceEngine.Worker(Unity.InferenceEngine.ModelLoader.Load(asset), Unity.InferenceEngine.BackendType.CPU);
+            var data = new int[OnDevicePose.Size * OnDevicePose.Size * 3];
+            for (int i = 0; i < data.Length; i++) data[i] = 128;
+            using var input = new Unity.InferenceEngine.Tensor<int>(new Unity.InferenceEngine.TensorShape(1, OnDevicePose.Size, OnDevicePose.Size, 3), data);
+            worker.Schedule(input);
+            var arr = (worker.PeekOutput() as Unity.InferenceEngine.Tensor<float>).DownloadToArray();
+            Assert.AreEqual(51, arr.Length);
+            foreach (var v in arr) Assert.IsFalse(float.IsNaN(v));
+        }
+    }
 }

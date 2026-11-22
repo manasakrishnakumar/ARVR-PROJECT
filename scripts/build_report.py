@@ -323,7 +323,8 @@ para("The Unity client is the main application of the project: the 3D rehabilita
      "so counting, quality assessment, calibration and the adaptive suggestion are identical everywhere.")
 para("The web application plays a supporting role: it captures the camera, runs pose estimation (MediaPipe, in the browser) and provides accounts, the dashboard "
      "and the research pages. Its **3D room** page can publish the live pose, as numbers only, to a room code on the local backend, and the Unity client joins that room and mirrors the user.")
-note("**Honest limits.** Pose estimation does not run inside Unity: real pose reaches Unity through the browser relay (running MediaPipe inside Unity would need an extra plugin). "
+note("**On-device pose (optional feature).** Unity can also read the webcam itself and run the MoveNet Lightning pose model (ONNX, Apache-2.0) with Unity's Inference Engine (formerly Sentis); the angle is computed in Unity and streamed to the same backend. The model loads and runs in the tests, but its accuracy and a live webcam run have not been validated; the validated path remains MediaPipe in the browser, relayed to Unity.")
+note("**Honest limits.** The validated pose estimation (MediaPipe) runs in the browser, and real pose reaches Unity through the relay. "
      "Blender was not used; every 3D object is created in Unity from primitives in code. VR is prepared (OpenXR packages installed) but has not been tried on a headset.")
 h2("Features")
 bullets([
@@ -358,7 +359,7 @@ bullets([
 ])
 note("**Verification status.** Earlier in the project the Unity client compiled with no errors, 15 edit-mode tests passed, a Windows player was built and ran, and the synthetic demo was "
      "run by hand in Play mode against the live backend (repetitions counted, feedback and suggestion shown). The newer HUD (big counter, phase pill, progress bar), the joint highlight, the torso "
-     "block and the floor grid were added afterwards. On 19 November 2026 the project compiled and all 22 edit-mode tests passed in batch mode (15 earlier plus 7 for the HUD helpers). The same day the room was run in Play mode through an editor script (Arvr.Editor.CaptureRoom) against the live backend, and the figure below is that Game-view capture: trainer demo, repetition counter, phase label, progress bar, torso and highlighted joint.")
+     "block and the floor grid were added afterwards. On 19 November 2026 the project compiled and all 27 edit-mode tests passed in batch mode (15 earlier, 7 for the HUD helpers and 5 for the on-device pose feature). The same day the room was run in Play mode through an editor script (Arvr.Editor.CaptureRoom) against the live backend, and the figure below is that Game-view capture: trainer demo, repetition counter, phase label, progress bar, torso and highlighted joint.")
 figure_missing = not (SHOTS / "unity-room.png").exists()
 if figure_missing:
     note("**Figure to add:** a Game-view screenshot of the Unity room in Play mode (trainer in amber, user in teal, HUD on the left). Capture it after the first Play run and insert it here.")
@@ -598,7 +599,7 @@ table(["Suite", "Scope", "Result"], [
     ["Frontend (vitest)", "pose guidance, WebXR helper, display options, components, pages, interactive features", f"{n_front} passed"],
     ["Type check (tsc)", "TypeScript strict check of the frontend", "clean" if tsc_ok else "not verified"],
     ["Production build (vite)", "bundle the frontend", "OK" if build_ok else "not verified"],
-    ["Unity (edit mode)", "pose maths, trainer poses, message and relay parsing, HUD helpers", "22 passed on 19 Nov 2026 (15 earlier + 7 HUD helper cases)"],
+    ["Unity (edit mode)", "pose maths, trainer poses, message and relay parsing, HUD helpers", "27 passed (15 earlier + 7 HUD helper + 5 on-device pose cases)"],
 ], [1.5, 3.5, 1.3])
 para("What tests cannot cover (a real camera, lighting, bodies, phones, headsets) is listed in docs/limitations-and-safety.md with a manual test protocol.")
 
@@ -675,7 +676,7 @@ table(["Check", "Result"], [
     ["Frontend tests", f"{n_front} passed"],
     ["TypeScript check", "clean" if tsc_ok else "not verified"],
     ["Frontend production build", "OK" if build_ok else "not verified"],
-    ["Unity compile and tests", "Compiled; 22/22 edit-mode tests passed (batch mode); Play mode run and captured (19 Nov 2026)"],
+    ["Unity compile and tests", "Compiled; 27/27 edit-mode tests passed (batch mode); Play mode run and captured (19 Nov 2026)"],
     ["Pages opened and checked in a browser", "Home, Exercises, Live session, Pose analysis, AR overlay, 3D room, Research, Record data, Settings, Dashboard"],
     ["Interactive features checked in a browser", "Home demo counted a repetition; Ctrl+K palette navigated to the Dashboard"],
 ], [2.6, 3.7])

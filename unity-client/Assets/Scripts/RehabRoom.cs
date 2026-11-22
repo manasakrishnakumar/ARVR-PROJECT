@@ -21,7 +21,8 @@ namespace Arvr
         public float sendHz = 15f;
         public bool calibrate = true;
 
-        enum Source { TrainerDemo, ManualSlider, LiveFromBrowser }
+        enum Source { TrainerDemo, ManualSlider, LiveFromBrowser, OnDeviceCamera }
+        OnDevicePose onDevice;
         Source source = Source.TrainerDemo;
         ExerciseApi.Exercise[] exercises = new ExerciseApi.Exercise[0];
         int exerciseIndex;
@@ -112,12 +113,19 @@ namespace Arvr
                 yield break;
             }
             status = "Creating session...";
-            yield return SessionApi.Create(backendUrl, ex.id, level, true, s => session = s); // synthetic input: always a demo session
+            bool synthetic = source != Source.OnDeviceCamera; // the demo and the slider are synthetic: always a demo session; a real camera is not
+            yield return SessionApi.Create(backendUrl, ex.id, level, synthetic, s => session = s);
             client = new AnalysisClient();
             var task = client.ConnectAsync(backendUrl, ex.id, level, session?.id, session?.ws_key, calibrate);
             while (!task.IsCompleted) yield return null;
             status = client.Connected ? (calibrate ? "Streaming. Calibrating to the range you move in (about 5 seconds)." : "Streaming to the backend.")
                                       : $"Backend not reachable ({client.LastError}); the room still runs.";
+            if (source == Source.OnDeviceCamera)
+            {
+                onDevice = new OnDevicePose(Resources.Load<Unity.InferenceEngine.ModelAsset>("movenet_lightning"));
+                if (onDevice.Error != null) { status = onDevice.Error; onDevice = null; yield break; }
+                status = "On-device pose (MoveNet via Unity Inference Engine). Stand in view of the camera.";
+            }
             t0 = Time.time; running = true;
         }
 
@@ -126,6 +134,7 @@ namespace Arvr
             running = false;
             client?.Dispose(); client = null;
             relay?.Dispose(); relay = null;
+            onDevice?.Dispose(); onDevice = null;
             if (session != null && reps > 0) yield return SessionApi.Complete(backendUrl, session.id, c => result = c);
             session = null;
             status = "Stopped.";
@@ -157,10 +166,32 @@ namespace Arvr
             }
 
             var t = Time.time - t0;
+            if (source == Source.OnDeviceCamera && onDevice != null)
+            {
+                onDevice.Tick();
+                if (onDevice.Latest != null)
+                {
+                    user.Apply(onDevice.Latest, 1.1f);
+                    var names = ex.landmarks;
+                    if (names != null && names.Length >= 3 && PoseMath.Index.TryGetValue(names[0], out var ia) && PoseMath.Index.TryGetValue(names[1], out var ib) && PoseMath.Index.TryGetValue(names[2], out var ic))
+                    {
+                        var a = MoveNetMapper.AngleIfConfident(onDevice.Latest, ia, ib, ic);
+                        angle = a ?? float.NaN;
+                        if (a.HasValue && client != null && Time.time - lastSend >= 1f / sendHz) { lastSend = Time.time; client.Send(t, a.Value); }
+                    }
+                }
+                DrainClient();
+                return;
+            }
             float progress = source == Source.TrainerDemo ? PoseMath.Progress01(t) : manualProgress;
             angle = ex.start_angle_deg + progress * (ex.target_angle_deg - ex.start_angle_deg);
             user.Apply(PoseMath.Trainer(ex.landmarks, ex.start_angle_deg, ex.target_angle_deg, Side, progress), 1.1f);
             if (client != null && Time.time - lastSend >= 1f / sendHz) { lastSend = Time.time; client.Send(t, angle); }
+            DrainClient();
+        }
+
+        void DrainClient()
+        {
             while (client != null && client.TryDequeue(out var m))
             {
                 if (m.type == "hello") target = m.target_reps;
@@ -191,7 +222,7 @@ namespace Arvr
                 for (int l = 1; l <= 3; l++) if (GUILayout.Toggle(level == l, l.ToString(), GUI.skin.button, GUILayout.Width(40))) level = l;
                 calibrate = GUILayout.Toggle(calibrate, "Calibrate to my range");
                 GUILayout.EndHorizontal();
-                source = (Source)GUILayout.Toolbar((int)source, new[] { "Trainer demo", "Manual slider", "Live from browser" });
+                source = (Source)GUILayout.Toolbar((int)source, new[] { "Trainer demo", "Manual slider", "Live from browser", "On-device camera" });
                 if (source == Source.LiveFromBrowser)
                 {
                     GUILayout.BeginHorizontal(); GUILayout.Label("Room code:"); roomCode = GUILayout.TextField(roomCode, 12); GUILayout.EndHorizontal();

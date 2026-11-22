@@ -1,7 +1,7 @@
 {
   "name": "Arvr.Editor",
   "rootNamespace": "Arvr.EditorTools",
-  "references": [ "Arvr.Runtime" ],
+  "references": [ "Arvr.Runtime", "Unity.InferenceEngine" ],
   "includePlatforms": [ "Editor" ],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

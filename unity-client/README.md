@@ -10,6 +10,7 @@ Research prototype, not a medical device.
   - *Trainer demo*: a synthetic sweep, sent to the backend as a **demo session** (never saved to a history).
   - *Manual slider*: you set the movement.
   - *Live from browser*: the web app's **3D room** page publishes your real webcam pose (numbers only, no video) to a room code on the local backend; Unity joins that room and mirrors you. Pose estimation and counting stay in the browser.
+  - *On-device camera* (new, optional): the webcam is read inside Unity and a pose model (**MoveNet Lightning**, ONNX, Apache-2.0, in `Assets/Resources/`) runs in Unity's **Inference Engine** (the package formerly called Sentis, `com.unity.ai.inference`) on the CPU. The 17 MoveNet keypoints are mapped to the app's 33-landmark layout (`MoveNetMapper`), the joint angle is computed in Unity and streamed to the same backend counter and adaptive controller. No browser needed. **Not validated**: the project's measured angle errors are for MediaPipe, not this model; accuracy, speed on your PC and a live webcam run have not been tested. MoveNet gives no depth (z) and no heel/foot points.
 - **Calibration** ("Calibrate to my range", on by default): the backend measures the range you actually move in during the first seconds and counts relative to it; no repetitions are lost.
 - After **Stop and save**: the adaptive suggestion with reasons and the safety note.
 - **HUD**: big repetition counter, phase pill (grey rest, amber moving, green at target), progress bar, angle, feedback, status. The exercising joint is enlarged and coloured by phase; figures have a torso block; the room has a floor grid and lights.
@@ -17,7 +18,7 @@ Research prototype, not a medical device.
 - **Blender is not used**: all 3D objects are created in code from Unity primitives. A Blender-modelled character (FBX) could replace the primitives later.
 
 ## What it does not do
-- No pose estimation inside Unity (that would need a plugin such as MediaPipe for Unity): real pose comes through the browser relay.
+- Pose estimation can now run inside Unity (On-device camera, above), but only as a new, unvalidated option; the validated path (MediaPipe in the browser, relayed to Unity) is unchanged.
 - No accounts or charts (use the web app).
 - **VR is prepared but NOT tested**: the OpenXR packages are installed and the HUD reports XR status, but XR is switched off and no headset has been used. See *Enabling VR* below.
 
@@ -40,6 +41,6 @@ $u = "C:\Program Files\Unity\Hub\Editor\6000.6.7f1\Editor\Unity.exe"; $p = "<pat
 Edit-mode tests (`Assets/Tests/EditMode`) cover the pose maths, trainer poses for four joint types on both sides, message and URL parsing, and the relay frame format.
 
 ## Verification status
-**Verified on 19 November 2026:** the project compiles and all 22 edit-mode tests pass in batch mode (15 earlier + 7 HudMath). The room was also run in Play mode against the live backend and captured (`docs/screenshots/unity-room.png`: counter, phase label, progress bar, joint highlight, torso, floor grid). Reproduce with `Unity -projectPath unity-client -executeMethod Arvr.Editor.CaptureRoom.Run` (not batch mode). Project setting changed: Active Input Handling = Both (the Input System package from OpenXR otherwise opens a blocking dialog in the Editor).
+**Verified on 19 November 2026:** the project compiles and all 27 edit-mode tests pass in batch mode (15 earlier + 7 HudMath + 5 on-device pose, incl. loading and running the model on a blank image). The room was also run in Play mode against the live backend and captured (`docs/screenshots/unity-room.png`: counter, phase label, progress bar, joint highlight, torso, floor grid). Reproduce with `Unity -projectPath unity-client -executeMethod Arvr.Editor.CaptureRoom.Run` (not batch mode). Project setting changed: Active Input Handling = Both (the Input System package from OpenXR otherwise opens a blocking dialog in the Editor).
 
 See `docs/implementation-status.md` (Unity section) for what was verified and when; anything not listed there is untested.

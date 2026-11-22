@@ -1,7 +1,7 @@
 {
   "name": "Arvr.Tests.EditMode",
   "rootNamespace": "Arvr.Tests",
-  "references": [ "Arvr.Runtime", "UnityEngine.TestRunner", "UnityEditor.TestRunner" ],
+  "references": [ "Arvr.Runtime", "Unity.InferenceEngine", "UnityEngine.TestRunner", "UnityEditor.TestRunner" ],
   "includePlatforms": [ "Editor" ],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
