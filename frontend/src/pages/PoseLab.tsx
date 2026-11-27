@@ -288,7 +288,7 @@ export default function PoseLab({ exercises, user, initialExerciseId, onSessionS
       </div>
       {error && <p className="error" role="alert">{error}</p>}
       {(sockStatus === "failed") && <p className="error" role="alert">Analysis backend unreachable: pose is shown but reps are not counted. Start the backend and restart the session.</p>}
-      <p aria-live="polite"><strong>Status:</strong> {status}{mode === "demo" && " (synthetic data, not a real person; only elbow flexion moves; demo sessions are never saved to your history)"}</p>
+      <p aria-live="polite"><strong>Status:</strong> {status}{mode === "demo" && " (synthetic figure performing the selected exercise, not a real person; demo sessions are never saved to your history)"}</p>
 
       <div className="session">
         <div className="stage">

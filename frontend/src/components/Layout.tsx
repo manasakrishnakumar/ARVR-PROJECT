@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import ErrorBoundary from "./ErrorBoundary";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import { applyPrefs, loadPrefs, savePrefs, type DisplayPrefs } from "../a11y";
@@ -10,6 +11,7 @@ const LINKS = NAV_LINKS;
 const THEME_ICON = { auto: "◐", light: "☀", dark: "☾" } as const;
 
 export default function Layout() {
+  const { pathname } = useLocation();
   const { user } = useAuth();
   const [disclaimer, setDisclaimer] = useState("Research prototype. Not a medical device and not clinically validated.");
   const [backendDown, setBackendDown] = useState(false);
@@ -44,7 +46,7 @@ export default function Layout() {
       </header>
       <div className="notice banner" role="note">{disclaimer}</div>
       {backendDown && <div className="notice error-banner" role="alert">Cannot reach the backend. Start it (see README) and reload.</div>}
-      <main id="main" className="page"><Outlet /></main>
+      <main id="main" className="page"><ErrorBoundary key={pathname}><Outlet /></ErrorBoundary></main>
       <footer className="footer muted">
         Camera processing happens locally in your browser. No video is uploaded or stored. Scores are experimental system
         metrics, not validated medical outcomes. Follow your qualified rehabilitation professional's guidance.

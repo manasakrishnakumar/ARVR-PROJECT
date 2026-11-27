@@ -191,6 +191,33 @@ function SimulationView({ d }: { d: any }) { // eslint-disable-line @typescript-
   );
 }
 
+function UnityPoseView({ d }: { d: any }) { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const ci = (c: number[]) => `${c[0].toFixed(1)} to ${c[1].toFixed(1)}`;
+  const groups: [string, any][] = [...Object.entries<any>(d.by_exercise), ...Object.entries<any>(d.by_camera)]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  return (
+    <>
+      <p className="muted">{d.recordings} recording-and-exercise combinations; a person was found in {(d.detection_rate * 100).toFixed(1)}% of {d.frames_sampled} frames.</p>
+      <div className="table-wrap">
+        <table className="angles">
+          <thead><tr><th>Pose source</th><th>Frames</th><th>MAE (°)</th><th>95% CI of MAE (°)</th><th>Correlation r</th></tr></thead>
+          <tbody>
+            <tr><td>Unity (BlazePose)</td><td>{d.unity_vs_mocap.n}</td><td>{f3(d.unity_vs_mocap.mae_deg)}</td><td>{ci(d.unity_mae_ci95)}</td><td>{f3(d.unity_vs_mocap.pearson_r)}</td></tr>
+            <tr><td>MediaPipe (Python), same frames</td><td>{d.mediapipe_vs_mocap_same_frames.n}</td><td>{f3(d.mediapipe_vs_mocap_same_frames.mae_deg)}</td><td>{ci(d.mediapipe_mae_ci95)}</td><td>{f3(d.mediapipe_vs_mocap_same_frames.pearson_r)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div className="table-wrap">
+        <table className="angles">
+          <thead><tr><th>Exercise or camera</th><th>Frames</th><th>Unity MAE (°)</th><th>MediaPipe MAE (°)</th></tr></thead>
+          <tbody>
+            {groups.map(([k, v]) => <tr key={k}><td>{k.replace(/_/g, " ")}</td><td>{v.unity.n}</td><td>{f3(v.unity.mae_deg)}</td><td>{f3(v.mediapipe.mae_deg)}</td></tr>)}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
 export default function Research() {
   const [res, setRes] = useState<ResearchResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -217,7 +244,9 @@ export default function Research() {
             : r.kind === "angle" ? <AngleView d={r.data} />
             : r.kind === "simulation" ? <SimulationView d={r.data} />
             : r.kind === "performance" ? <PerformanceView d={r.data} />
-            : <MethodsView d={r.data} kind={r.kind} />}
+            : r.kind === "unity-pose" ? <UnityPoseView d={r.data} />
+            : r.kind === "lopo" || r.kind === "synthetic" || r.data?._sizes ? <MethodsView d={r.data} kind={r.kind} />
+            : <p className="muted">This result type has no table view yet. See docs/results/.</p>}
         </section>
       ))}
       <section className="card">
